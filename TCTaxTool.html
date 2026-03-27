@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TC TAX PRO - V1.7</title>
+    <style>
+        :root { --primary: #007bff; --dark: #2c3e50; --success: #2ecc71; --danger: #e74c3c; --gray: #7f8c8d; --warning: #f39c12; }
+        body { font-family: -apple-system, system-ui, sans-serif; padding: env(safe-area-inset-top) 10px 10px 10px; background:#ecf0f1; color: #2c3e50; margin: 0; }
+        .header { background: var(--dark); color: white; padding: 20px; text-align: center; border-radius: 12px 12px 0 0; max-width: 600px; margin: 10px auto 0 auto; position: relative; }
+        .header h2 { margin: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        .settings-link { position: absolute; right: 15px; top: 18px; font-size: 1.2rem; cursor: pointer; color: white; }
+        .lock-status { position: absolute; left: 15px; top: 20px; font-size: 0.7rem; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding-bottom: 30px; }
+        label { display: block; margin-top: 10px; font-weight: 700; font-size: 0.65rem; color: var(--gray); text-transform: uppercase; }
+        input, select { width: 100%; padding: 12px; margin: 4px 0; border: 2px solid #dfe6e9; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        .btn-main { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold; margin-top: 15px; }
+        .btn-photo { background: #673ab7; margin-bottom: 10px; font-size: 0.85rem; padding: 10px; }
+        .btn-send-log { background: var(--success); margin-top: 20px; box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3); }
+        #reviewCard { display: none; background: #fffde7; border: 2px solid var(--warning); padding: 15px; border-radius: 12px; margin-top: 15px; }
+        .review-val { font-size: 1.4rem; font-weight: bold; color: var(--dark); margin-bottom: 5px; }
+        #managerView { display: none; }
+        .dashboard { margin-top: 15px; padding: 12px; background: var(--dark); color: #ecf0f1; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.75rem; }
+        .dashboard div strong { font-size: 1.1rem; color: white; }
+        .profit-highlight { grid-column: span 2; color: var(--success) !important; font-size: 1.2rem !important; border-top: 1px solid #444; padding-top: 8px; margin-top: 4px; font-weight: bold; }
+        .breakdown-box { margin-top: 10px; background: #f8f9fa; border: 1px solid #dfe6e9; border-radius: 8px; padding: 10px; }
+        .breakdown-item { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 3px 0; border-bottom: 1px dashed #ddd; }
+        .entry { background: white; border: 1px solid #dfe6e9; padding: 10px; border-radius: 8px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .cat-badge { font-size: 0.6rem; background: var(--gray); color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: bold; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; overflow-y: auto; padding-top: env(safe-area-inset-top); }
+        .modal-content { background: white; margin: 20px auto; width: 90%; padding: 20px; border-radius: 12px; position: relative; }
+        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; font-weight: bold; cursor: pointer; }
+        .photo-gallery { display: flex; overflow-x: auto; gap: 10px; margin-top: 15px; padding-bottom: 10px; }
+        .gallery-img { width: 100%; flex-shrink: 0; border-radius: 8px; object-fit: contain; max-height: 60vh;}
+        .btn-alt { width: 100%; padding: 12px; color: white; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px; cursor: pointer; }
+        .vat-only { display: none; }
+        .status-msg { font-size: 0.7rem; text-align: center; margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <span class="lock-status" id="viewModeLabel">EMPLOYEE MODE</span>
+    <h2>TC TAX PRO</h2>
+    <span class="settings-link" onclick="handleSettingsClick()">⚙️</span>
+</div>
+
+<div class="container">
+    <div id="inputForm">
+        <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;"><label>Type</label><select id="type" onchange="updateCategoryList(); saveSticky();"><option value="income">Job Income</option><option value="expenseNoVat">Expense</option><option value="expenseVat" class="vat-only">Expense (Inc. VAT)</option></select></div>
+            <div style="flex: 1;"><label>Branch/Cat</label><select id="category" onchange="saveSticky()"></select></div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;"><label>Amount (£)</label><input type="number" id="amount" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+            <div style="flex: 1;"><label>Date</label><input type="date" id="date"></div>
+        </div>
+        <label>Evidence Photos</label>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" onchange="handlePhoto(this)">
+        <button class="btn-main btn-photo" onclick="document.getElementById('photoInput').click()">📷 SNAP PHOTO</button>
+        <div id="pendingContainer" style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px;"></div>
+        <input type="text" id="notes" placeholder="Ref / Reg / Description">
+        <button class="btn-main" onclick="startReview()" style="background:var(--dark)">REVIEW TRANSACTION</button>
+    </div>
+
+    <div id="reviewCard">
+        <h3 style="margin-top:0; color:var(--warning); font-size:0.8rem;">CONFIRM DETAILS</h3>
+        <div id="reviewContent"></div>
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button class="btn-main" onclick="cancelReview()" style="background:var(--gray); flex:1; margin-top:0;">EDIT</button>
+            <button class="btn-main" onclick="confirmAndAdd()" style="background:var(--success); flex:2; margin-top:0;">CONFIRM & LOG</button>
+        </div>
+    </div>
+
+    <div id="employeeArea">
+        <button class="btn-main btn-send-log" onclick="triggerDailySend()">📧 SEND DAILY LOG</button>
+        <div id="syncStatus" class="status-msg"></div>
+        <div id="employeeSession" style="margin-top:30px;"><label>Today's Activity</label><div id="sessionEntries"></div></div>
+    </div>
+
+    <div id="managerView">
+        <hr style="margin: 40px 0; border: 0; border-top: 3px solid #eee;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 0.8rem; color: var(--gray); margin: 0;">MANAGER DASHBOARD</h3>
+            <button onclick="lockManagerMode()" style="background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.6rem;">LOCK VIEW</button>
+        </div>
+        <div class="dashboard" id="output"></div>
+        <div id="breakdown" class="breakdown-box"></div>
+        <div style="margin-top:20px;"><label>Search Master History</label><input type="text" id="searchBox" placeholder="Search..." onkeyup="render()"></div>
+        <div id="entries" style="margin-top:10px;"></div>
+    </div>
+</div>
+
+<div id="settingsModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('settingsModal')">&times;</span>
+        <h3 id="settingsTitle">Settings</h3>
+        <div id="managerSettingsOnly">
+            <label>Master Data Tools</label>
+            <button class="btn-alt" style="background:#2c3e50" onclick="exportCSV()">Export to Excel (CSV)</button>
+            <button class="btn-alt" style="background:#673ab7" onclick="emailBackup('MASTER', 'ADMIN')">Backup Full Database</button>
+            <button class="btn-alt" style="background:var(--warning)" onclick="triggerImport()">Import Employee Files</button>
+            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importBackup(this)">
+            <hr>
+        </div>
+        <div class="settings-group"><label>VAT Tracking Mode</label><select id="vatConfig" onchange="toggleVatMode()"><option value="no">VAT Tracking: OFF</option><option value="yes">VAT Tracking: ON (20%)</option></select></div>
+        <div class="settings-group"><label>Security PIN</label><input type="password" id="oldPin" placeholder="Old PIN"><input type="password" id="newPin" placeholder="New PIN"><button class="btn-main" onclick="updatePin()" style="background:var(--dark)">Save PIN</button></div>
+        <div class="settings-group" style="margin-top:30px;"><button class="btn-alt" style="background:var(--danger)" onclick="clearAll()">Wipe Device Records</button></div>
+    </div>
+</div>
+
+<div id="detailsModal" class="modal"><div class="modal-content"><span class="close-modal" onclick="closeModal('detailsModal')">&times;</span><h3 id="modalTitle">Detail</h3><div id="modalDesc"></div><div id="modalGallery" class="photo-gallery"></div><button class="btn-main" style="background:var(--danger); margin-top:20px; display:none;" id="modalDelBtn">Delete Record</button></div></div>
+
+<script>
+    let db;
+    let pendingPhotos = [];
+    let isManagerMode = false;
+    let currentDraft = null;
+
+    const incomeCats = ["Mechanic", "Tyres", "Locksmith", "Recovery"];
+    const expenseCats = ["Fuel", "Parts", "Van/Tools", "Other"];
+
+    const request = indexedDB.open("TC_TaxAudit_DB", 6);
+    request.onupgradeneeded = (e) => { 
+        let d = e.target.result;
+        if(!d.objectStoreNames.contains("entries")) d.createObjectStore("entries", { keyPath: "id", autoIncrement: true }); 
+    };
+    request.onsuccess = (e) => { 
+        db = e.target.result; 
+        document.getElementById('date').valueAsDate = new Date();
+        loadVatState(); applySticky(); checkSmartReset(); render(); 
+    };
+
+    function startReview() {
+        const amt = parseFloat(document.getElementById('amount').value);
+        if (!amt) return;
+        currentDraft = { type: document.getElementById('type').value, category: document.getElementById('category').value, amount: amt, notes: document.getElementById('notes').value, date: document.getElementById('date').value, photos: [...pendingPhotos], created: Date.now() };
+        
+        // HIDE EVERYTHING during review
+        document.getElementById('inputForm').style.display = 'none';
+        document.getElementById('employeeArea').style.display = 'none';
+        document.getElementById('reviewCard').style.display = 'block';
+        
+        document.getElementById('reviewContent').innerHTML = `<div class="review-val">£${amt.toFixed(2)}</div><div style="font-size:0.8rem; color:var(--gray)">${currentDraft.type.toUpperCase()} - ${currentDraft.category}</div>`;
+    }
+
+    function cancelReview() { 
+        document.getElementById('inputForm').style.display = 'block'; 
+        document.getElementById('employeeArea').style.display = 'block';
+        document.getElementById('reviewCard').style.display = 'none'; 
+    }
+
+    function confirmAndAdd() { 
+        db.transaction("entries", "readwrite").objectStore("entries").add(currentDraft).onsuccess = () => { 
+            document.getElementById('amount').value = ''; 
+            document.getElementById('notes').value = ''; 
+            pendingPhotos = []; 
+            document.getElementById('pendingContainer').innerHTML = ''; 
+            localStorage.setItem('backup_sent_flag', 'false'); 
+            cancelReview(); 
+            render(); 
+        }; 
+    }
+
+    function triggerDailySend() {
+        const name = prompt("Enter YOUR NAME to confirm log:");
+        if (!name || name.trim() === "") { alert("Name required to send log."); return; }
+        emailBackup('DAILY', name.trim());
+    }
+
+    function emailBackup(mode, userName) { 
+        db.transaction("entries", "readonly").objectStore("entries").getAll().onsuccess = (ev) => { 
+            const dateStr = new Date().toLocaleDateString().replace(/\//g, '-');
+            const data = JSON.stringify(ev.target.result);
+            const fileName = `TC_${mode}_${userName}_${dateStr}.json`;
+            
+            let a = document.createElement('a'); 
+            a.href = URL.createObjectURL(new Blob([data], {type:'application/json'})); 
+            a.download = fileName; 
+            a.click(); 
+            
+            if (mode === 'DAILY') { localStorage.setItem('backup_sent_flag', 'true'); render(); }
+            
+            // Helpful instruction in the body
+            window.location.href = `mailto:?subject=${mode} Log - ${userName} (${dateStr})&body=Log file downloaded. Please ATTACH the file '${fileName}' from your downloads folder before sending.`; 
+        }; 
+    }
+
+    // Standard Rendering & Logic (Pinned from V1.6)
+    function checkSmartReset() { if (isManagerMode) return; const lastOpen = localStorage.getItem('last_open_date'); const today = new Date().toDateString(); const hasSent = localStorage.getItem('backup_sent_flag') === 'true'; if (lastOpen && lastOpen !== today && hasSent) { db.transaction("entries", "readwrite").objectStore("entries").clear().oncomplete = () => { localStorage.setItem('backup_sent_flag', 'false'); render(); }; } localStorage.setItem('last_open_date', today); }
+    function updateCategoryList() { const type = document.getElementById('type').value; const list = (type === 'income') ? incomeCats : expenseCats; document.getElementById('category').innerHTML = list.map(c => `<option value="${c}">${c}</option>`).join(''); }
+    function saveSticky() { localStorage.setItem('sticky_type', document.getElementById('type').value); localStorage.setItem('sticky_cat', document.getElementById('category').value); }
+    function applySticky() { const sType = localStorage.getItem('sticky_type'); const sCat = localStorage.getItem('sticky_cat'); if (sType) document.getElementById('type').value = sType; updateCategoryList(); if (sCat) document.getElementById('category').value = sCat; }
+    function handlePhoto(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = (e) => { pendingPhotos.push(e.target.result); const pill = document.createElement('div'); pill.style = "background:#eee; padding:5px 10px; border-radius:15px; font-size:0.65rem; border:1px solid #ccc; display:flex; align-items:center;"; pill.innerHTML = `Photo ${pendingPhotos.length} <span style="color:red; margin-left:8px; cursor:pointer;" onclick="this.parentElement.remove()">✕</span>`; document.getElementById('pendingContainer').appendChild(pill); }; reader.readAsDataURL(input.files[0]); } }
+    function render() { db.transaction("entries", "readonly").objectStore("entries").getAll().onsuccess = (ev) => { let list = ev.target.result; document.getElementById('sessionEntries').innerHTML = list.sort((a,b) => b.created - a.created).map(e => `<div class="entry" onclick='showDetails(${JSON.stringify(e).replace(/"/g, "&quot;")})'><div><strong>${e.category}</strong><br><small>${e.notes || '-'}</small></div><div style="text-align:right"><b>£${e.amount.toFixed(2)}</b></div></div>`).join(''); const hasSent = localStorage.getItem('backup_sent_flag') === 'true'; const statusEl = document.getElementById('syncStatus'); statusEl.innerText = hasSent ? "✅ LOG SENT TO MANAGER" : "⚠️ LOG NOT SENT YET"; statusEl.style.color = hasSent ? "var(--success)" : "var(--warning)"; if (!isManagerMode) return; const isVat = localStorage.getItem('vat_enabled') === 'yes'; let totalInc = 0, totalExpVat = 0, totalExpNoVat = 0, catTotals = {}; [...incomeCats, ...expenseCats].forEach(c => catTotals[c] = 0); list.forEach(e => { const isInc = e.type === 'income'; let netAmt = (isVat && (e.type === 'income' || e.type === 'expenseVat')) ? e.amount / 1.2 : e.amount; if (isInc) totalInc += e.amount; else (e.type === 'expenseVat' ? totalExpVat += e.amount : totalExpNoVat += e.amount); if (catTotals.hasOwnProperty(e.category)) catTotals[e.category] += netAmt; }); const query = document.getElementById('searchBox').value.toLowerCase(); document.getElementById('entries').innerHTML = list.filter(e => (e.notes + e.category + e.date).toLowerCase().includes(query)).sort((a,b) => new Date(b.date) - new Date(a.date) || b.created - a.created).map(e => `<div class="entry" onclick='showDetails(${JSON.stringify(e).replace(/"/g, "&quot;")})'><div><small>${e.date}</small><br><strong>${e.notes}</strong><br><span class="cat-badge">${e.category}</span></div><div style="text-align:right"><b>£${e.amount.toFixed(2)}</b></div></div>`).join(''); const outV = isVat ? totalInc/6 : 0, inV = isVat ? totalExpVat/6 : 0, netP = (totalInc - outV) - ((totalExpVat - inV) + totalExpNoVat); let tax = netP > 0 ? (netP <= 50000 ? netP * 0.19 : (netP >= 250000 ? netP * 0.25 : (netP * 0.25) - (0.015 * (250000 - netP)))) : 0; document.getElementById('output').innerHTML = `${isVat ? `<div>GROSS:<br><strong>£${(totalInc - (totalExpVat + totalExpNoVat)).toFixed(2)}</strong></div><div>VAT DUE:<br><strong>£${(outV - inV).toFixed(2)}</strong></div>`:''}<div>NET PROFIT:<br><strong>£${netP.toFixed(2)}</strong></div><div>CORP TAX:<br><strong>£${tax.toFixed(2)}</strong></div><div class="profit-highlight">EST. TAKE HOME: £${(netP - tax).toFixed(2)}</div>`; document.getElementById('breakdown').innerHTML = `<strong>Branch Summary:</strong>` + Object.entries(catTotals).filter(v => v[1] > 0).map(v => `<div class="breakdown-item"><span>${v[0]}</span> <span>£${v[1].toFixed(2)}</span></div>`).join(''); }; }
+    function handleSettingsClick() { if (!isManagerMode) { const pin = prompt("Enter Admin PIN:"); if (pin === (localStorage.getItem('master_pin') || "1234")) { isManagerMode = true; document.getElementById('managerView').style.display = 'block'; document.getElementById('viewModeLabel').innerText = 'MANAGER MODE'; document.getElementById('viewModeLabel').style.background = 'var(--success)'; render(); } } document.getElementById('managerSettingsOnly').style.display = isManagerMode ? 'block' : 'none'; openSettings(); }
+    function lockManagerMode() { isManagerMode = false; document.getElementById('managerView').style.display = 'none'; document.getElementById('viewModeLabel').innerText = 'EMPLOYEE MODE'; document.getElementById('viewModeLabel').style.background = 'rgba(255,255,255,0.2)'; render(); }
+    function triggerImport() { document.getElementById('importFile').click(); }
+    function importBackup(input) { const reader = new FileReader(); reader.onload = (e) => { const incoming = JSON.parse(e.target.result); const store = db.transaction("entries", "readwrite").objectStore("entries"); store.getAll().onsuccess = (ev) => { const existing = new Set(ev.target.result.map(i => i.created)); incoming.forEach(item => { if (!existing.has(item.created)) { delete item.id; store.add(item); } }); alert("Import Successful."); render(); }; }; reader.readAsText(input.files[0]); }
+    function showDetails(e) { document.getElementById('modalTitle').innerText = e.type.toUpperCase(); document.getElementById('modalDesc').innerHTML = `<b>Date:</b> ${e.date}<br><b>Amount:</b> £${e.amount.toFixed(2)}<br><b>Branch:</b> ${e.category}<br><b>Note:</b> ${e.notes}`; const gallery = document.getElementById('modalGallery'); gallery.innerHTML = ''; (e.photos || []).forEach(p => { gallery.innerHTML += `<img src="${p}" class="gallery-img">`; }); const delBtn = document.getElementById('modalDelBtn'); if (isManagerMode) { delBtn.style.display = 'block'; delBtn.onclick = () => { if(confirm("Delete?")) { db.transaction("entries", "readwrite").objectStore("entries").delete(e.id).onsuccess = () => { closeModal('detailsModal'); render(); }; } }; } else { delBtn.style.display = 'none'; } document.getElementById('detailsModal').style.display = 'block'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function openSettings() { document.getElementById('settingsModal').style.display = 'block'; }
+    function toggleVatMode() { localStorage.setItem('vat_enabled', document.getElementById('vatConfig').value); loadVatState(); render(); }
+    function loadVatState() { const isVat = localStorage.getItem('vat_enabled') === 'yes'; document.getElementById('vatConfig').value = isVat ? 'yes' : 'no'; document.querySelectorAll('.vat-only').forEach(el => el.style.display = isVat ? 'block' : 'none'); }
+    function updatePin() { if (document.getElementById('oldPin').value === (localStorage.getItem('master_pin') || "1234")) { localStorage.setItem('master_pin', document.getElementById('newPin').value); alert("PIN Updated"); } }
+    function exportCSV() { db.transaction("entries", "readonly").objectStore("entries").getAll().onsuccess = (ev) => { let csv = 'Date,Type,Category,Amount,Notes\n' + ev.target.result.map(e => `${e.date},${e.type},${e.category},${e.amount},"${e.notes}"`).join('\n'); let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = 'TC_MASTER_EXPORT.csv'; a.click(); }; }
+    function clearAll() { if(confirm("WIPE ALL DATA?")) { db.transaction("entries", "readwrite").objectStore("entries").clear().onsuccess = () => render(); } }
+</script>
+</body>
+</html>
