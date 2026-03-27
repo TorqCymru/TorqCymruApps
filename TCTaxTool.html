@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TC TAX PRO - V1.7</title>
+    <title>TC TAX PRO - V1.8</title>
     <style>
         :root { --primary: #007bff; --dark: #2c3e50; --success: #2ecc71; --danger: #e74c3c; --gray: #7f8c8d; --warning: #f39c12; }
         body { font-family: -apple-system, system-ui, sans-serif; padding: env(safe-area-inset-top) 10px 10px 10px; background:#ecf0f1; color: #2c3e50; margin: 0; }
@@ -35,6 +35,7 @@
         .btn-alt { width: 100%; padding: 12px; color: white; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px; cursor: pointer; }
         .vat-only { display: none; }
         .status-msg { font-size: 0.7rem; text-align: center; margin-top: 10px; font-weight: bold; }
+        .danger-zone { border: 2px solid var(--danger); padding: 15px; border-radius: 8px; margin-top: 20px; background: #fff5f5; }
     </style>
 </head>
 <body>
@@ -94,7 +95,8 @@
 <div id="settingsModal" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="closeModal('settingsModal')">&times;</span>
-        <h3 id="settingsTitle">Settings</h3>
+        <h3 id="settingsTitle">Admin Settings</h3>
+        
         <div id="managerSettingsOnly">
             <label>Master Data Tools</label>
             <button class="btn-alt" style="background:#2c3e50" onclick="exportCSV()">Export to Excel (CSV)</button>
@@ -103,9 +105,21 @@
             <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importBackup(this)">
             <hr>
         </div>
+
         <div class="settings-group"><label>VAT Tracking Mode</label><select id="vatConfig" onchange="toggleVatMode()"><option value="no">VAT Tracking: OFF</option><option value="yes">VAT Tracking: ON (20%)</option></select></div>
-        <div class="settings-group"><label>Security PIN</label><input type="password" id="oldPin" placeholder="Old PIN"><input type="password" id="newPin" placeholder="New PIN"><button class="btn-main" onclick="updatePin()" style="background:var(--dark)">Save PIN</button></div>
-        <div class="settings-group" style="margin-top:30px;"><button class="btn-alt" style="background:var(--danger)" onclick="clearAll()">Wipe Device Records</button></div>
+        
+        <div class="settings-group" style="margin-top:15px;">
+            <label>Security PIN Management</label>
+            <input type="password" id="oldPin" placeholder="Enter Current PIN">
+            <input type="password" id="newPin" placeholder="Enter New PIN">
+            <button class="btn-main" onclick="updatePin()" style="background:var(--dark)">Update Security PIN</button>
+        </div>
+
+        <div class="danger-zone">
+            <label style="color:var(--danger)">Danger Zone</label>
+            <p style="font-size:0.6rem; color:var(--gray); margin:5px 0 10px 0;">Warning: This will permanently delete all logs stored on this phone.</p>
+            <button class="btn-alt" style="background:var(--danger)" onclick="clearAll()">WIPE DEVICE RECORDS</button>
+        </div>
     </div>
 </div>
 
@@ -131,16 +145,62 @@
         loadVatState(); applySticky(); checkSmartReset(); render(); 
     };
 
+    function handleSettingsClick() {
+        if (!isManagerMode) {
+            const pin = prompt("Enter Admin PIN to access settings:");
+            
+            // STRICT GATEKEEPER: If cancel (null) or blank or wrong, STOP EVERYTHING.
+            if (pin === null || pin.trim() === "") {
+                return; // Exit function immediately
+            }
+            
+            const masterPin = localStorage.getItem('master_pin') || "1234";
+            if (pin === masterPin) {
+                isManagerMode = true;
+                document.getElementById('managerView').style.display = 'block';
+                document.getElementById('viewModeLabel').innerText = 'MANAGER MODE';
+                document.getElementById('viewModeLabel').style.background = 'var(--success)';
+                render();
+                openSettings(); // Only open modal if PIN is correct
+            } else {
+                alert("Incorrect PIN.");
+            }
+        } else {
+            // If already in manager mode, just open settings
+            openSettings();
+        }
+    }
+
+    function lockManagerMode() { 
+        isManagerMode = false; 
+        document.getElementById('managerView').style.display = 'none'; 
+        document.getElementById('viewModeLabel').innerText = 'EMPLOYEE MODE'; 
+        document.getElementById('viewModeLabel').style.background = 'rgba(255,255,255,0.2)'; 
+        render(); 
+    }
+
+    function updatePin() { 
+        const oldP = document.getElementById('oldPin').value;
+        const currentMaster = localStorage.getItem('master_pin') || "1234";
+        if (oldP === currentMaster) {
+            const newP = document.getElementById('newPin').value;
+            if (newP.length < 4) { alert("PIN must be at least 4 digits."); return; }
+            localStorage.setItem('master_pin', newP);
+            alert("Security PIN updated successfully.");
+            document.getElementById('oldPin').value = '';
+            document.getElementById('newPin').value = '';
+        } else {
+            alert("Current PIN is incorrect.");
+        }
+    }
+
     function startReview() {
         const amt = parseFloat(document.getElementById('amount').value);
         if (!amt) return;
         currentDraft = { type: document.getElementById('type').value, category: document.getElementById('category').value, amount: amt, notes: document.getElementById('notes').value, date: document.getElementById('date').value, photos: [...pendingPhotos], created: Date.now() };
-        
-        // HIDE EVERYTHING during review
         document.getElementById('inputForm').style.display = 'none';
         document.getElementById('employeeArea').style.display = 'none';
         document.getElementById('reviewCard').style.display = 'block';
-        
         document.getElementById('reviewContent').innerHTML = `<div class="review-val">£${amt.toFixed(2)}</div><div style="font-size:0.8rem; color:var(--gray)">${currentDraft.type.toUpperCase()} - ${currentDraft.category}</div>`;
     }
 
@@ -164,7 +224,7 @@
 
     function triggerDailySend() {
         const name = prompt("Enter YOUR NAME to confirm log:");
-        if (!name || name.trim() === "") { alert("Name required to send log."); return; }
+        if (name === null || name.trim() === "") return;
         emailBackup('DAILY', name.trim());
     }
 
@@ -173,28 +233,49 @@
             const dateStr = new Date().toLocaleDateString().replace(/\//g, '-');
             const data = JSON.stringify(ev.target.result);
             const fileName = `TC_${mode}_${userName}_${dateStr}.json`;
-            
             let a = document.createElement('a'); 
             a.href = URL.createObjectURL(new Blob([data], {type:'application/json'})); 
             a.download = fileName; 
             a.click(); 
-            
             if (mode === 'DAILY') { localStorage.setItem('backup_sent_flag', 'true'); render(); }
-            
-            // Helpful instruction in the body
             window.location.href = `mailto:?subject=${mode} Log - ${userName} (${dateStr})&body=Log file downloaded. Please ATTACH the file '${fileName}' from your downloads folder before sending.`; 
         }; 
     }
 
-    // Standard Rendering & Logic (Pinned from V1.6)
     function checkSmartReset() { if (isManagerMode) return; const lastOpen = localStorage.getItem('last_open_date'); const today = new Date().toDateString(); const hasSent = localStorage.getItem('backup_sent_flag') === 'true'; if (lastOpen && lastOpen !== today && hasSent) { db.transaction("entries", "readwrite").objectStore("entries").clear().oncomplete = () => { localStorage.setItem('backup_sent_flag', 'false'); render(); }; } localStorage.setItem('last_open_date', today); }
     function updateCategoryList() { const type = document.getElementById('type').value; const list = (type === 'income') ? incomeCats : expenseCats; document.getElementById('category').innerHTML = list.map(c => `<option value="${c}">${c}</option>`).join(''); }
     function saveSticky() { localStorage.setItem('sticky_type', document.getElementById('type').value); localStorage.setItem('sticky_cat', document.getElementById('category').value); }
     function applySticky() { const sType = localStorage.getItem('sticky_type'); const sCat = localStorage.getItem('sticky_cat'); if (sType) document.getElementById('type').value = sType; updateCategoryList(); if (sCat) document.getElementById('category').value = sCat; }
     function handlePhoto(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = (e) => { pendingPhotos.push(e.target.result); const pill = document.createElement('div'); pill.style = "background:#eee; padding:5px 10px; border-radius:15px; font-size:0.65rem; border:1px solid #ccc; display:flex; align-items:center;"; pill.innerHTML = `Photo ${pendingPhotos.length} <span style="color:red; margin-left:8px; cursor:pointer;" onclick="this.parentElement.remove()">✕</span>`; document.getElementById('pendingContainer').appendChild(pill); }; reader.readAsDataURL(input.files[0]); } }
-    function render() { db.transaction("entries", "readonly").objectStore("entries").getAll().onsuccess = (ev) => { let list = ev.target.result; document.getElementById('sessionEntries').innerHTML = list.sort((a,b) => b.created - a.created).map(e => `<div class="entry" onclick='showDetails(${JSON.stringify(e).replace(/"/g, "&quot;")})'><div><strong>${e.category}</strong><br><small>${e.notes || '-'}</small></div><div style="text-align:right"><b>£${e.amount.toFixed(2)}</b></div></div>`).join(''); const hasSent = localStorage.getItem('backup_sent_flag') === 'true'; const statusEl = document.getElementById('syncStatus'); statusEl.innerText = hasSent ? "✅ LOG SENT TO MANAGER" : "⚠️ LOG NOT SENT YET"; statusEl.style.color = hasSent ? "var(--success)" : "var(--warning)"; if (!isManagerMode) return; const isVat = localStorage.getItem('vat_enabled') === 'yes'; let totalInc = 0, totalExpVat = 0, totalExpNoVat = 0, catTotals = {}; [...incomeCats, ...expenseCats].forEach(c => catTotals[c] = 0); list.forEach(e => { const isInc = e.type === 'income'; let netAmt = (isVat && (e.type === 'income' || e.type === 'expenseVat')) ? e.amount / 1.2 : e.amount; if (isInc) totalInc += e.amount; else (e.type === 'expenseVat' ? totalExpVat += e.amount : totalExpNoVat += e.amount); if (catTotals.hasOwnProperty(e.category)) catTotals[e.category] += netAmt; }); const query = document.getElementById('searchBox').value.toLowerCase(); document.getElementById('entries').innerHTML = list.filter(e => (e.notes + e.category + e.date).toLowerCase().includes(query)).sort((a,b) => new Date(b.date) - new Date(a.date) || b.created - a.created).map(e => `<div class="entry" onclick='showDetails(${JSON.stringify(e).replace(/"/g, "&quot;")})'><div><small>${e.date}</small><br><strong>${e.notes}</strong><br><span class="cat-badge">${e.category}</span></div><div style="text-align:right"><b>£${e.amount.toFixed(2)}</b></div></div>`).join(''); const outV = isVat ? totalInc/6 : 0, inV = isVat ? totalExpVat/6 : 0, netP = (totalInc - outV) - ((totalExpVat - inV) + totalExpNoVat); let tax = netP > 0 ? (netP <= 50000 ? netP * 0.19 : (netP >= 250000 ? netP * 0.25 : (netP * 0.25) - (0.015 * (250000 - netP)))) : 0; document.getElementById('output').innerHTML = `${isVat ? `<div>GROSS:<br><strong>£${(totalInc - (totalExpVat + totalExpNoVat)).toFixed(2)}</strong></div><div>VAT DUE:<br><strong>£${(outV - inV).toFixed(2)}</strong></div>`:''}<div>NET PROFIT:<br><strong>£${netP.toFixed(2)}</strong></div><div>CORP TAX:<br><strong>£${tax.toFixed(2)}</strong></div><div class="profit-highlight">EST. TAKE HOME: £${(netP - tax).toFixed(2)}</div>`; document.getElementById('breakdown').innerHTML = `<strong>Branch Summary:</strong>` + Object.entries(catTotals).filter(v => v[1] > 0).map(v => `<div class="breakdown-item"><span>${v[0]}</span> <span>£${v[1].toFixed(2)}</span></div>`).join(''); }; }
-    function handleSettingsClick() { if (!isManagerMode) { const pin = prompt("Enter Admin PIN:"); if (pin === (localStorage.getItem('master_pin') || "1234")) { isManagerMode = true; document.getElementById('managerView').style.display = 'block'; document.getElementById('viewModeLabel').innerText = 'MANAGER MODE'; document.getElementById('viewModeLabel').style.background = 'var(--success)'; render(); } } document.getElementById('managerSettingsOnly').style.display = isManagerMode ? 'block' : 'none'; openSettings(); }
-    function lockManagerMode() { isManagerMode = false; document.getElementById('managerView').style.display = 'none'; document.getElementById('viewModeLabel').innerText = 'EMPLOYEE MODE'; document.getElementById('viewModeLabel').style.background = 'rgba(255,255,255,0.2)'; render(); }
+    
+    function render() { 
+        db.transaction("entries", "readonly").objectStore("entries").getAll().onsuccess = (ev) => { 
+            let list = ev.target.result; 
+            document.getElementById('sessionEntries').innerHTML = list.sort((a,b) => b.created - a.created).map(e => `<div class="entry" onclick='showDetails(${JSON.stringify(e).replace(/"/g, "&quot;")})'><div><strong>${e.category}</strong><br><small>${e.notes || '-'}</small></div><div style="text-align:right"><b>£${e.amount.toFixed(2)}</b></div></div>`).join(''); 
+            const hasSent = localStorage.getItem('backup_sent_flag') === 'true'; 
+            const statusEl = document.getElementById('syncStatus'); 
+            statusEl.innerText = hasSent ? "✅ LOG SENT TO MANAGER" : "⚠️ LOG NOT SENT YET"; 
+            statusEl.style.color = hasSent ? "var(--success)" : "var(--warning)"; 
+            
+            if (!isManagerMode) return; 
+            const isVat = localStorage.getItem('vat_enabled') === 'yes'; 
+            let totalInc = 0, totalExpVat = 0, totalExpNoVat = 0, catTotals = {}; 
+            [...incomeCats, ...expenseCats].forEach(c => catTotals[c] = 0); 
+            list.forEach(e => { 
+                const isInc = e.type === 'income'; 
+                let netAmt = (isVat && (e.type === 'income' || e.type === 'expenseVat')) ? e.amount / 1.2 : e.amount; 
+                if (isInc) totalInc += e.amount; else (e.type === 'expenseVat' ? totalExpVat += e.amount : totalExpNoVat += e.amount); 
+                if (catTotals.hasOwnProperty(e.category)) catTotals[e.category] += netAmt; 
+            }); 
+            const query = document.getElementById('searchBox').value.toLowerCase(); 
+            document.getElementById('entries').innerHTML = list.filter(e => (e.notes + e.category + e.date).toLowerCase().includes(query)).sort((a,b) => new Date(b.date) - new Date(a.date) || b.created - a.created).map(e => `<div class="entry" onclick='showDetails(${JSON.stringify(e).replace(/"/g, "&quot;")})'><div><small>${e.date}</small><br><strong>${e.notes}</strong><br><span class="cat-badge">${e.category}</span></div><div style="text-align:right"><b>£${e.amount.toFixed(2)}</b></div></div>`).join(''); 
+            const outV = isVat ? totalInc/6 : 0, inV = isVat ? totalExpVat/6 : 0, netP = (totalInc - outV) - ((totalExpVat - inV) + totalExpNoVat); 
+            let tax = netP > 0 ? (netP <= 50000 ? netP * 0.19 : (netP >= 250000 ? netP * 0.25 : (netP * 0.25) - (0.015 * (250000 - netP)))) : 0; 
+            document.getElementById('output').innerHTML = `${isVat ? `<div>GROSS:<br><strong>£${(totalInc - (totalExpVat + totalExpNoVat)).toFixed(2)}</strong></div><div>VAT DUE:<br><strong>£${(outV - inV).toFixed(2)}</strong></div>`:''}<div>NET PROFIT:<br><strong>£${netP.toFixed(2)}</strong></div><div>CORP TAX:<br><strong>£${tax.toFixed(2)}</strong></div><div class="profit-highlight">EST. TAKE HOME: £${(netP - tax).toFixed(2)}</div>`; 
+            document.getElementById('breakdown').innerHTML = `<strong>Branch Summary:</strong>` + Object.entries(catTotals).filter(v => v[1] > 0).map(v => `<div class="breakdown-item"><span>${v[0]}</span> <span>£${v[1].toFixed(2)}</span></div>`).join(''); 
+        }; 
+    }
+
     function triggerImport() { document.getElementById('importFile').click(); }
     function importBackup(input) { const reader = new FileReader(); reader.onload = (e) => { const incoming = JSON.parse(e.target.result); const store = db.transaction("entries", "readwrite").objectStore("entries"); store.getAll().onsuccess = (ev) => { const existing = new Set(ev.target.result.map(i => i.created)); incoming.forEach(item => { if (!existing.has(item.created)) { delete item.id; store.add(item); } }); alert("Import Successful."); render(); }; }; reader.readAsText(input.files[0]); }
     function showDetails(e) { document.getElementById('modalTitle').innerText = e.type.toUpperCase(); document.getElementById('modalDesc').innerHTML = `<b>Date:</b> ${e.date}<br><b>Amount:</b> £${e.amount.toFixed(2)}<br><b>Branch:</b> ${e.category}<br><b>Note:</b> ${e.notes}`; const gallery = document.getElementById('modalGallery'); gallery.innerHTML = ''; (e.photos || []).forEach(p => { gallery.innerHTML += `<img src="${p}" class="gallery-img">`; }); const delBtn = document.getElementById('modalDelBtn'); if (isManagerMode) { delBtn.style.display = 'block'; delBtn.onclick = () => { if(confirm("Delete?")) { db.transaction("entries", "readwrite").objectStore("entries").delete(e.id).onsuccess = () => { closeModal('detailsModal'); render(); }; } }; } else { delBtn.style.display = 'none'; } document.getElementById('detailsModal').style.display = 'block'; }
@@ -202,9 +283,8 @@
     function openSettings() { document.getElementById('settingsModal').style.display = 'block'; }
     function toggleVatMode() { localStorage.setItem('vat_enabled', document.getElementById('vatConfig').value); loadVatState(); render(); }
     function loadVatState() { const isVat = localStorage.getItem('vat_enabled') === 'yes'; document.getElementById('vatConfig').value = isVat ? 'yes' : 'no'; document.querySelectorAll('.vat-only').forEach(el => el.style.display = isVat ? 'block' : 'none'); }
-    function updatePin() { if (document.getElementById('oldPin').value === (localStorage.getItem('master_pin') || "1234")) { localStorage.setItem('master_pin', document.getElementById('newPin').value); alert("PIN Updated"); } }
     function exportCSV() { db.transaction("entries", "readonly").objectStore("entries").getAll().onsuccess = (ev) => { let csv = 'Date,Type,Category,Amount,Notes\n' + ev.target.result.map(e => `${e.date},${e.type},${e.category},${e.amount},"${e.notes}"`).join('\n'); let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = 'TC_MASTER_EXPORT.csv'; a.click(); }; }
-    function clearAll() { if(confirm("WIPE ALL DATA?")) { db.transaction("entries", "readwrite").objectStore("entries").clear().onsuccess = () => render(); } }
+    function clearAll() { if(confirm("WIPE ALL DATA ON THIS DEVICE? This cannot be undone.")) { db.transaction("entries", "readwrite").objectStore("entries").clear().onsuccess = () => { alert("All records wiped."); render(); closeModal('settingsModal'); }; } }
 </script>
 </body>
 </html>
