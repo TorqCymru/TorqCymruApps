@@ -3,371 +3,354 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TORQ CYMRU | V72</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <title>TORQ CYMRU | SOVEREIGN v16.70</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        :root { --red: #C8102E; --green: #00B140; --blue: #007BFF; --dark: #0f0f0f; --panel: #1a1a1a; --border: #333; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: #ccc; padding: 10px; margin: 0; }
-        #main-ui { max-width: 1250px; margin: 0 auto; background: var(--panel); padding: 20px; border-radius: 12px; border-top: 6px solid var(--red); display: flex; flex-wrap: wrap; gap: 20px; }
-        .setup-side { flex: 2; min-width: 350px; }
-        .preview-side { flex: 1; min-width: 320px; position: sticky; top: 10px; height: fit-content; }
-        h1 { color: #fff; text-align: center; margin: 0; font-style: italic; letter-spacing: 2px; cursor: pointer; }
-        .section-title { color: var(--red); text-transform: uppercase; font-size: 0.75em; border-bottom: 1px solid var(--border); padding-bottom: 5px; margin: 20px 0 10px; font-weight: bold; }
-        input, select, textarea { width: 100%; padding: 12px; background: #222; border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 16px; margin-bottom: 10px; box-sizing: border-box; font-family: inherit; }
-        textarea { height: 60px; resize: none; }
-        .upper { text-transform: uppercase; }
-        .job-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
-        .job-card { background: #222; border: 1px solid var(--border); padding: 12px; border-radius: 8px; display: flex; align-items: center; font-size: 0.85em; cursor: pointer; }
-        .job-card input[type="checkbox"] { width: auto; margin-right: 12px; transform: scale(1.2); }
-        .calc-box { background: #000; padding: 15px; border-radius: 10px; border: 1px solid var(--green); }
-        .grand-total-display { font-size: 1.8em; color: var(--green); font-weight: bold; text-align: right; border-top: 1px solid #333; padding-top: 5px; }
-        button { width: 100%; padding: 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-bottom: 10px; transition: 0.2s; }
-        .btn-copy { background: var(--green); color: #fff; }
-        .btn-pdf { background: var(--red); color: #fff; }
-        .btn-dist { background: var(--blue); color: #fff; height: 45px; padding: 0 10px; font-size: 11px; }
-        .saved-list { background: #111; padding: 10px; border-radius: 8px; border: 1px solid #333; max-height: 400px; overflow-y: auto; margin-top: 10px; }
-        .saved-item { padding: 12px; border-bottom: 1px solid #222; display: flex; flex-direction: column; gap: 8px; font-size: 0.85em; }
-        .status-row { display: flex; gap: 4px; }
-        .status-btn { flex: 1; padding: 8px 4px; font-size: 9px; border-radius: 4px; border: none; color: white; cursor: pointer; text-transform: uppercase; font-weight: bold; }
-        #quote-container { display: none; background: white; color: black; padding: 40px; min-height: 100vh; box-sizing: border-box; font-size: 14px; }
-        .pdf-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--red); padding-bottom: 15px; margin-bottom: 25px; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        .pdf-table td { padding: 10px; border-bottom: 1px solid #eee; }
-        .bank-info-box { margin-top: 20px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 5px; font-size: 11px; }
-        .sticky-pdf-bar { position: fixed; top: 0; left: 0; right: 0; background: #222; padding: 10px; display: flex; gap: 10px; z-index: 10002; }
+        :root { --red: #C8102E; --green: #00B140; --blue: #007BFF; --yellow: #FFD700; --dark: #0a0a0a; --panel: #161616; --border: #2a2a2a; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: #eee; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        #startup-screen { position: fixed; inset: 0; background: var(--dark); z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .van-btn { width: 85%; max-width: 300px; padding: 18px; margin: 8px; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 12px; font-weight: bold; text-align: center; cursor: pointer; }
+        header { position: sticky; top: 0; background: var(--dark); z-index: 1000; padding: 12px 15px; border-bottom: 2px solid var(--red); display: flex; justify-content: space-between; align-items: center; }
+        #main-ui { max-width: 1000px; margin: 0 auto; background: var(--panel); padding: 15px; min-height: 95vh; display:none; }
+        .master-only { display: none !important; } .is-master .master-only { display: block !important; }
+        .section-title { color: var(--red); text-transform: uppercase; font-size: 0.7rem; border-bottom: 1px solid var(--border); padding-bottom: 5px; margin: 20px 0 10px; font-weight: 800; }
+        .job-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+        .job-card { background: #1f1f1f; border: 1px solid var(--border); padding: 12px; border-radius: 8px; display: flex; align-items: center; font-size: 0.8rem; cursor: pointer; }
+        .job-card input { margin-right: 10px; width: 18px; height: 18px; accent-color: var(--red); }
+        input, select, textarea { width: 100%; padding: 12px; background: #111; border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 16px; margin-bottom: 10px; box-sizing: border-box; }
+        .upper { text-transform: uppercase !important; }
+        .tabs { display: flex; gap: 5px; margin: 15px 0; background: #111; padding: 5px; border-radius: 10px; }
+        .tab { flex: 1; padding: 12px; color: #666; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; font-size: 0.75rem; }
+        .tab.active { background: var(--red); color: #fff; }
+        .view-panel { display: none; } .view-panel.active { display: block !important; }
+        .job-item { padding: 15px; background: #111; margin-bottom: 10px; border-radius: 12px; border-left: 8px solid #333; cursor: pointer; position: relative; }
+        .status-badge { font-size: 0.55rem; padding: 2px 6px; border-radius: 4px; font-weight: 900; margin-left: 8px; vertical-align: middle; }
+        .van-tag { font-size: 0.55rem; background: var(--blue); color: white; padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: bold; }
+        .date-tag { font-size: 0.55rem; background: #333; color: var(--yellow); padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: bold; }
+        .status-QUOTE { border-left-color: var(--red); } .badge-QUOTE { background: var(--red); color: white; }
+        .status-ACCEPTED { border-left-color: var(--yellow); } .badge-ACCEPTED { background: var(--yellow); color: black; }
+        .status-DISPATCHED { border-left-color: var(--blue); } .badge-DISPATCHED { background: var(--blue); color: white; }
+        .status-PAID { border-left-color: var(--green); } .badge-PAID { background: var(--green); color: white; }
+        .details-pane { display: none; padding-top: 15px; border-top: 1px solid #222; margin-top: 10px; } 
+        .is-open .details-pane { display: block; }
+        button { width: 100%; padding: 12px; border-radius: 10px; font-weight: bold; border: none; text-transform: uppercase; cursor: pointer; margin-bottom: 8px; font-size: 0.7rem; color: #fff; }
+        .btn-green { background: var(--green); } .btn-blue { background: var(--blue); } .btn-red { background: var(--red); } .btn-yellow { background: var(--yellow); color: #000; } .btn-gray { background: #444; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: #1a1a1a; padding: 25px; border-radius: 15px; width: 100%; max-width: 400px; border: 1px solid #333; max-height: 90vh; overflow-y: auto; }
+        .breakdown-row { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 3px; border-bottom: 1px solid #222; padding-bottom: 2px; }
+        .stats-header { background: #000; border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-around; text-align: center; }
+        .stat-box span { display: block; font-size: 0.6rem; color: #888; text-transform: uppercase; }
+        .stat-box strong { font-size: 1.1rem; color: var(--green); }
     </style>
 </head>
-<body>
+<body id="appBody">
+
+<div id="startup-screen">
+    <h2 style="font-style:italic; letter-spacing:2px; color:#fff;">TORQ CYMRU</h2>
+    <div class="van-btn" onclick="startApp('Mechanic 1')">MECHANIC 1</div>
+    <div class="van-btn" onclick="startApp('Mechanic 2')">MECHANIC 2</div>
+    <div class="van-btn" onclick="startApp('Tyres')">TYRES</div>
+    <div class="van-btn" onclick="startApp('Locksmith')">LOCKSMITH</div>
+    <div class="van-btn" onclick="startApp('Recovery')">RECOVERY</div>
+    <div class="van-btn master-btn" style="border-color:var(--red); color:var(--red); margin-top:20px;" onclick="initMasterLogin()">MASTER CONTROL</div>
+</div>
+
+<header id="appHeader" style="display:none;">
+    <div onclick="triggerLogoUpload()" style="cursor:pointer; display: flex; align-items: center; gap: 12px;">
+        <img id="appLogo" src="" style="display:none; max-height:40px; width:auto; border-radius:4px;">
+        <h3 id="logoText" style="margin:0; font-style:italic; letter-spacing:1px; color:#fff;">TORQ CYMRU</h3>
+    </div>
+    <div class="master-only" style="cursor:pointer; font-size:22px;" onclick="openCog()">⚙️</div>
+</header>
 
 <div id="main-ui">
-    <div class="setup-side">
-        <h1 onclick="document.getElementById('logo-input').click()">TORQ CYMRU</h1>
-        <input type="file" id="logo-input" accept="image/*" onchange="handleLogo(this)" style="display:none;">
-        <img id="logo-preview" style="max-height:60px; display:none; margin:10px auto;">
-
-        <div class="section-title">1. Rates & Business Info</div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
-            <select id="usageType" onchange="calculate()"><option value="1">General (No VAT)</option><option value="1.2">Commercial (+ 20% VAT)</option></select>
-            <select id="vehSize" onchange="calculate()"><option value="1.0">Small Car</option><option value="1.1">Med Car</option><option value="1.2">Large Car</option><option value="1.1">Small Van</option><option value="1.25">Med Van</option><option value="1.4">Large Van</option></select>
-            <select id="vehTier" onchange="calculate()"><option value="1.0">Standard</option><option value="1.1">Premium</option><option value="1.2">Performance</option></select>
-        </div>
-        <input type="text" id="vatNum" placeholder="VAT Registration No. (Optional)" style="margin-top:10px;" oninput="localStorage.setItem('torqVAT', this.value)">
-
-        <div class="section-title">2. Payment Details (Saves Automatically)</div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1.5fr; gap:10px;">
-            <input type="text" id="bankSort" placeholder="Sort Code" oninput="localStorage.setItem('torqSort', this.value)">
-            <input type="text" id="bankAcc" placeholder="Acc Number" oninput="localStorage.setItem('torqAcc', this.value)">
-            <input type="text" id="bankName" placeholder="Account Name" oninput="localStorage.setItem('torqBankName', this.value)">
-        </div>
-
-        <div class="section-title">3. Client & Vehicle</div>
-        <div style="display:flex; gap:10px;"><input type="text" id="custName" placeholder="Name"><input type="text" id="custPhone" placeholder="Phone"></div>
-        <input type="text" id="workAddr" placeholder="Work Address">
-        <div style="display:flex; gap:10px;"><input type="text" id="vehReg" class="upper" placeholder="REG" oninput="this.value=this.value.toUpperCase()"><input type="text" id="makeModel" placeholder="Make/Model"></div>
-        <textarea id="jobNotes" placeholder="Job Notes (Visible on PDF)..."></textarea>
-        
-        <div style="display:flex; gap:10px; align-items:center;">
-            <input type="text" id="basePC" class="upper" placeholder="BASE PC"><input type="text" id="destPC" class="upper" placeholder="CLIENT PC">
-            <button class="btn-dist" onclick="getDistance()">MILES</button>
-        </div>
-        <div id="distStatus" style="text-align:right; font-size:12px; color:var(--green); margin-bottom:10px; font-weight:bold;">0 miles</div>
-
-        <div class="section-title">4. Custom Labour & Services</div>
-        <div style="display:flex; gap:10px;"><input type="text" id="customName" placeholder="Repair Name"><input type="number" id="customHours" placeholder="Hours" step="0.1" oninput="calculate()"></div>
-        <div class="job-grid" id="jobGrid"></div>
+    <div class="tabs">
+        <div class="tab master-only active" id="tab-build" onclick="switchTab('build')">BUILDER</div>
+        <div class="tab" id="tab-active" onclick="switchTab('active')">BOARD</div>
+        <div class="tab master-only" id="tab-history" onclick="switchTab('history')">HISTORY</div>
     </div>
 
-    <div class="preview-side">
-        <div class="section-title">5. Billing</div>
-        <div class="calc-box">
-            <label style="font-size:10px">Net Parts Cost (£)</label><input type="number" id="partsCost" placeholder="0.00" oninput="calculate()">
-            <div class="job-card"><input type="checkbox" id="envFee" onchange="calculate()"><label>Env Fee (£5)</label></div>
-            <div class="job-card"><input type="checkbox" id="emergeFee" onchange="calculate()"><label>Emergency Fee (£50)</label></div>
-            <div class="job-card"><input type="checkbox" id="sundayFee" onchange="calculate()"><label>Sunday Fee (£25)</label></div>
-            <div class="job-card"><input type="checkbox" id="showBank" checked><label>Show Bank Details on PDF</label></div>
-            <label style="font-size:10px">Labour Discount</label><input type="text" id="discIn" placeholder="£ or %" oninput="calculate()">
-            <div id="vatDisplay" style="font-size: 12px; color: #777; text-align: right; margin-top: 5px;">VAT: £0.00</div>
-            <div class="grand-total-display">Total: <span id="resTotal">£0.00</span></div>
+    <div id="panel-build" class="view-panel active">
+        <div class="section-title">Pricing Factors</div>
+        <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:8px;">
+            <select id="mUsage" onchange="calc()"><option value="1">No VAT</option><option value="1.1">10% VAT</option><option value="1.2">20% VAT</option></select>
+            <select id="mSize" onchange="calc()"><option value="1.0">Small Car</option><option value="1.1">Medium Car</option><option value="1.2">Large SUV</option><option value="1.1">Small Van</option><option value="1.25">Med Van</option><option value="1.4">Large Van</option></select>
         </div>
-        
-        <button class="btn-copy" style="margin-top:15px;" onclick="saveJob(); copyWick();">WhatsApp & Save</button>
-        <button class="btn-pdf" onclick="saveJob(); enterQuote();">PDF & Save</button>
-        <button style="background:#444; color:#fff;" onclick="clearForm()">Reset</button>
+        <select id="mTier" onchange="calc()" style="margin-top:8px;"><option value="1.0">Standard Rate</option><option value="1.1">Premium Rate</option><option value="1.2">Performance Rate</option></select>
+        <div class="section-title">Client & Vehicle</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;"><input type="text" id="mCust" placeholder="Name"><input type="tel" id="mPhone" placeholder="Phone" pattern="[0-9]*" inputmode="numeric"></div>
+        <input type="email" id="mEmail" placeholder="Client Email">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;"><input type="text" id="mReg" class="upper" placeholder="REG"><input type="text" id="mMake" placeholder="Make/Model"></div>
+        <input type="text" id="mPcode" class="upper" placeholder="POSTCODE" oninput="handleDistance()">
+        <textarea id="mAddr" placeholder="Work Address"></textarea>
+        <textarea id="mOfficeNotes" placeholder="Office Notes for Van..."></textarea>
+        <div class="section-title">Work List</div>
+        <div class="job-grid" id="mGrid"></div>
+        <div class="section-title">Custom Job</div>
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:8px;"><input type="text" id="mCustomJob" placeholder="Description"><input type="number" id="mCustomHours" placeholder="Hrs" oninput="calc()"></div>
+        <div class="section-title">Surcharges</div>
+        <div class="job-grid">
+            <label class="job-card"><input type="checkbox" id="mAcc" onchange="calc()"> Access Fee</label>
+            <label class="job-card"><input type="checkbox" id="mOOH" onchange="calc()"> OOH Fee</label>
+            <label class="job-card"><input type="checkbox" id="mEm" onchange="calc()"> Emergency Fee</label>
+            <label class="job-card"><input type="checkbox" id="mEnv" onchange="calc()"> Env Dis Fee</label>
+        </div>
+        <input type="number" id="mParts" placeholder="Parts Cost £" oninput="calc()" style="margin-top:15px;">
+        <div style="display:flex; gap:5px;"><input type="number" id="mDiscount" placeholder="Discount" oninput="calc()"><select id="mDiscType" onchange="calc()" style="width:80px;"><option value="val">£</option><option value="perc">%</option></select></div>
+        <div id="mTravelInfo" style="font-size:0.7rem; color:var(--yellow); text-align:right;">Distance: 0 mi</div>
+        <div id="mDispTotal" style="font-size:2.8rem; color:var(--green); font-weight:bold; text-align:right; margin:15px 0;">£0.00</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+            <button class="btn-green" id="saveBtn" onclick="saveJob('QUOTE')">SAVE QUOTE</button>
+            <button class="btn-blue" onclick="copyQuote()">COPY</button>
+            <button class="btn-yellow" onclick="genPDF('QUOTE')">PDF</button>
+        </div>
+        <button class="btn-gray" style="width:100%; margin-top:10px;" onclick="resetBuilder()">RESET BUILDER</button>
+    </div>
 
-        <div class="section-title">History Filter</div>
-        <input type="text" id="histSearch" placeholder="Search Reg, Name, Paid, Todo..." oninput="loadHistory()">
-        <div class="saved-list" id="savedList"></div>
+    <div id="panel-active" class="view-panel">
+        <input type="text" class="search-box" id="boardSearch" placeholder="Search Board..." oninput="render()">
+        <div id="active-board"></div>
+    </div>
+
+    <div id="panel-history" class="view-panel">
+        <div id="historyMasterStats" class="master-only"></div>
+        <input type="text" class="search-box" id="historySearch" placeholder="Search History..." oninput="render()">
+        <div id="history-board"></div>
     </div>
 </div>
 
-<div id="quote-container">
-    <div class="sticky-pdf-bar" id="pdf-bar"><button onclick="exitQuote()">Back</button><button onclick="finalDownload()" style="background:var(--red);">Download</button></div>
-    <div id="render-area" style="padding: 60px 40px;">
-        <div class="pdf-header">
-            <div id="pdf-logo-box"><h2 style="margin:0; color:var(--red);">TORQ CYMRU</h2></div>
-            <div style="text-align:right;"><h2 style="margin:0">QUOTE / INVOICE</h2><p id="pdfDate" style="margin:0"></p></div>
+<div id="cogModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color:var(--red); border-bottom:1px solid #333; padding-bottom:10px;">SYSTEM CONTROL</h3>
+        <div class="section-title">Hourly rates (£)</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+            <div><label style="font-size:8px;">SRV</label><input type="number" id="rateSrv"></div>
+            <div><label style="font-size:8px;">BRK</label><input type="number" id="rateBrk"></div>
+            <div><label style="font-size:8px;">MECH</label><input type="number" id="rateMech"></div>
         </div>
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px; background:#f4f4f4; padding:15px; font-size: 11px;">
-            <div><strong>CLIENT:</strong> <span id="pName"></span><br><strong>PHONE:</strong> <span id="pPhone"></span><br><strong>ADDRESS:</strong> <span id="pAddr"></span></div>
-            <div style="text-align:right;">
-                <strong>REF:</strong> <span id="pRef"></span><br>
-                <strong>REG:</strong> <span id="pReg"></span><br>
-                <strong>VEHICLE:</strong> <span id="pVeh"></span><br>
-                <span id="pVatRow" style="display:none;"><strong>VAT NO:</strong> <span id="pVatVal"></span></span>
-            </div>
+        <div class="section-title">Fixed Fees & Travel</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+            <div><label style="font-size:8px;">DIAG</label><input type="number" id="feeDiag"></div>
+            <div><label style="font-size:8px;">DPF</label><input type="number" id="feeDpf"></div>
+            <div><label style="font-size:8px;">BT1</label><input type="number" id="feeBatt1"></div>
         </div>
-        <table class="pdf-table"><tbody id="pBody"></tbody></table>
-        <div id="pNotes" style="margin-top:15px; padding:10px; background:#f9f9f9; border-left:4px solid var(--red); font-size:11px; white-space:pre-wrap; display:none;"></div>
-        <div style="width:200px; margin-left:auto; text-align:right; font-size:1.4em; border-top:2px solid #000; padding-top:10px; margin-top:20px;"><strong>TOTAL: <span id="pTotal"></span></strong></div>
-        <div id="pBankArea" class="bank-info-box" style="display:none;">
-            <strong>PAYMENT INFORMATION</strong><br>
-            Please pay via bank transfer to:<br><br>
-            <strong>Bank:</strong> <span id="pbBank"></span><br>
-            <strong>Account Name:</strong> <span id="pbName"></span><br>
-            <strong>Sort Code:</strong> <span id="pbSort"></span><br>
-            <strong>Account No:</strong> <span id="pbAcc"></span>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-top:5px;">
+            <div><label style="font-size:8px;">BT2</label><input type="number" id="feeBatt2"></div>
+            <div><label style="font-size:8px;">ACC</label><input type="number" id="feeAcc"></div>
+            <div><label style="font-size:8px;">OOH</label><input type="number" id="feeOOH"></div>
         </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-top:5px;">
+            <div><label style="font-size:8px;">EMER</label><input type="number" id="feeEm"></div>
+            <div><label style="font-size:8px;">ENV</label><input type="number" id="feeEnv"></div>
+            <div><label style="font-size:8px;">RAD</label><input type="number" id="setRadius"></div>
+        </div>
+        <div style="margin-top:5px;"><label style="font-size:8px;">£ / MILE</label><input type="number" id="setTravelRate" step="0.1"></div>
+        <div class="section-title">Security</div>
+        <input type="password" id="setMPass" placeholder="New Master Pass">
+        <input type="password" id="setAPass" placeholder="New Archive Pass">
+        <button class="btn-green" onclick="saveSettings()">SAVE ALL SETTINGS</button>
+        <button class="btn-red" style="margin-top:10px;" onclick="purgeArchive()">PURGE ALL DATA</button>
+        <button class="btn-gray" onclick="closeCog()">CLOSE</button>
     </div>
 </div>
+
+<input type="file" id="logoInput" style="display:none" accept="image/*" onchange="handleLogoFile(this)">
 
 <script>
-const jobs = [
-    { id: "bs", n: "Basic Service", h: 0.83, r: 55 },
-    { id: "fs", n: "Full Service", h: 1.25, r: 55 },
-    { id: "pf", n: "Brake Pads (Front)", h: 0.9, r: 60 },
-    { id: "pr", n: "Brake Pads (Rear)", h: 1.0, r: 60 },
-    { id: "pa", n: "Brake Pads (All)", h: 1.8, r: 60 },
-    { id: "df", n: "Pads & Discs (Front)", h: 1.3, r: 60 },
-    { id: "dr", n: "Pads & Discs (Rear)", h: 1.4, r: 60 },
-    { id: "da", n: "Pads & Discs (All)", h: 2.5, r: 60 },
-    { id: "dpf", n: "DPF Regen", f: 65 },
-    { id: "dia", n: "Diagnostics", f: 45 },
-    { id: "str", n: "Starter Motor", h: 2.2, r: 60 },
-    { id: "alt", n: "Alternator", h: 2.5, r: 60 }
-];
+const firebaseConfig = { apiKey: "AIzaSyDSC6LXcxQyBq0Yl42nRMH2GUuOInYL7TU", databaseURL: "https://torq-cymru-default-rtdb.europe-west1.firebasedatabase.app/", projectId: "torq-cymru" };
+firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-let state = { t:0, dist:0, labT:0, partsT:0, travel:0, env:0, emer:0, sun:0, disc:0, vat:0, ref:'' };
+let isMaster = false, selectedVan = "", cloudJobs = {}, mPass = "1234", aPass = "9999", curDist = 0, editId = null, logoB64 = "";
+let liveRates = { srv: 55, brk: 60, mech: 65 };
+let liveFees = { diag: 45, dpf: 65, batt1: 30, batt2: 50 };
+let liveSurs = { acc: 10, ooh: 25, em: 50, env: 5, radius: 10, travelRate: 1.50 };
 
-window.onload = () => {
-    const g = document.getElementById('jobGrid');
-    jobs.forEach(j => g.innerHTML += `<div class="job-card"><input type="checkbox" class="j-chk" value="${j.id}" onchange="calculate()"><label>${j.n}</label></div>`);
-    document.getElementById('basePC').value = localStorage.getItem('torqBase') || "";
-    document.getElementById('vatNum').value = localStorage.getItem('torqVAT') || "";
-    document.getElementById('bankSort').value = localStorage.getItem('torqSort') || "";
-    document.getElementById('bankAcc').value = localStorage.getItem('torqAcc') || "";
-    document.getElementById('bankName').value = localStorage.getItem('torqBankName') || "";
-    if(localStorage.getItem('torqLogo')) { 
-        document.getElementById('logo-preview').src = localStorage.getItem('torqLogo');
-        document.getElementById('logo-preview').style.display = 'block';
+const stdJobs = [{id:"bs",n:"Basic Service",h:0.83,r:55},{id:"fs",n:"Full Service",h:1.25,r:55},{id:"pf",n:"Front Pads",h:0.9,r:60},{id:"pr",n:"Rear Pads",h:1.0,r:60},{id:"pa",n:"Pads (All Round)",h:1.8,r:60},{id:"df",n:"Front Pads & Discs",h:1.3,r:60},{id:"dr",n:"Rear Pads & Discs",h:1.4,r:60},{id:"da",n:"Pads & Discs (All Round)",h:2.5,r:60},{id:"sm",n:"Starter Motor",h:2.2,r:65},{id:"alt",n:"Alternator",h:2.5,r:65},{id:"bt1",n:"Battery (Std)",f:30},{id:"bt2",n:"Battery (S/S)",f:50},{id:"dia",n:"Diagnostics",f:45},{id:"dpf",n:"DPF Regen",f:65}];
+
+function initMasterLogin() { const p = prompt("Master Pass:"); if(p === mPass) { isMaster = true; document.getElementById('appBody').classList.add('is-master'); startApp('Master Control'); } }
+
+function startApp(van) {
+    selectedVan = van; document.getElementById('startup-screen').style.display = 'none'; 
+    document.getElementById('main-ui').style.display = 'block'; document.getElementById('appHeader').style.display = 'flex';
+    db.ref("jobs").on("value", snap => { cloudJobs = snap.val() || {}; render(); });
+    db.ref("settings").on("value", snap => {
+        const s = snap.val() || {}; mPass = s.mPass || "1234"; aPass = s.aPass || "9999";
+        if(s.logo) logoB64 = s.logo;
+        if(s.liveRates) liveRates = s.liveRates; if(s.liveFees) liveFees = s.liveFees; if(s.liveSurs) liveSurs = s.liveSurs;
+        syncCogUI();
+    });
+    if(!isMaster) switchTab('active'); else switchTab('build');
+}
+
+function syncCogUI() {
+    if(!document.getElementById('rateSrv')) return;
+    document.getElementById('rateSrv').value = liveRates.srv; document.getElementById('rateBrk').value = liveRates.brk; document.getElementById('rateMech').value = liveRates.mech;
+    document.getElementById('feeDiag').value = liveFees.diag; document.getElementById('feeDpf').value = liveFees.dpf; document.getElementById('feeBatt1').value = liveFees.batt1; document.getElementById('feeBatt2').value = liveFees.batt2;
+    document.getElementById('feeAcc').value = liveSurs.acc; document.getElementById('feeOOH').value = liveSurs.ooh; document.getElementById('feeEm').value = liveSurs.em;
+    document.getElementById('feeEnv').value = liveSurs.env; document.getElementById('setRadius').value = liveSurs.radius; document.getElementById('setTravelRate').value = liveSurs.travelRate;
+}
+
+function saveSettings() {
+    const s = {
+        liveRates: { srv: parseFloat(document.getElementById('rateSrv').value), brk: parseFloat(document.getElementById('rateBrk').value), mech: parseFloat(document.getElementById('rateMech').value) },
+        liveFees: { diag: parseFloat(document.getElementById('feeDiag').value), dpf: parseFloat(document.getElementById('feeDpf').value), batt1: parseFloat(document.getElementById('feeBatt1').value), batt2: parseFloat(document.getElementById('feeBatt2').value) },
+        liveSurs: { acc: parseFloat(document.getElementById('feeAcc').value), ooh: parseFloat(document.getElementById('feeOOH').value), em: parseFloat(document.getElementById('feeEm').value), env: parseFloat(document.getElementById('feeEnv').value), radius: parseFloat(document.getElementById('setRadius').value), travelRate: parseFloat(document.getElementById('setTravelRate').value) },
+        mPass: document.getElementById('setMPass').value || mPass, aPass: document.getElementById('setAPass').value || aPass
+    };
+    db.ref("settings").update(s).then(() => { alert("Saved."); closeCog(); });
+}
+
+function render() {
+    const b = document.getElementById('active-board'), h = document.getElementById('history-board');
+    if(!b || !h) return;
+    const bQ = document.getElementById('boardSearch').value.toUpperCase(), hQ = document.getElementById('historySearch').value.toUpperCase();
+    b.innerHTML = ""; h.innerHTML = "";
+    let totalRev = 0, jobCount = 0; const now = new Date(); const todayStr = now.toISOString().split('T')[0];
+    Object.keys(cloudJobs).sort((x,y)=>cloudJobs[y].ts - cloudJobs[x].ts).forEach(id => {
+        const j = cloudJobs[id]; const sStr = `${j.reg} ${j.name} ${j.id}`.toUpperCase();
+        if(j.status === 'PAID') {
+            totalRev += (j.total || 0); jobCount++;
+            if(isMaster && sStr.includes(hQ)) h.innerHTML += buildCard(j, id);
+            if(!isMaster && j.dept === selectedVan) {
+                const jobDate = new Date(j.paidAt || j.ts).toISOString().split('T')[0];
+                if(jobDate === todayStr && sStr.includes(bQ)) b.innerHTML += buildCard(j, id);
+            }
+        } else {
+            if (!isMaster && j.schedDate && j.schedDate > todayStr) return;
+            if(!isMaster && (j.status !== 'DISPATCHED' || j.dept !== selectedVan)) return;
+            if(sStr.includes(bQ)) b.innerHTML += buildCard(j, id);
+        }
+    });
+    if(isMaster) document.getElementById('historyMasterStats').innerHTML = `<div class="stats-header"><div class="stat-box"><span>Total Revenue</span><strong>£${totalRev.toFixed(2)}</strong></div><div class="stat-box"><span>Total Jobs</span><strong>${jobCount}</strong></div></div>`;
+}
+
+function buildCard(j, id) {
+    let btns = "";
+    if(isMaster) {
+        if(j.status === 'QUOTE') btns = `<button class="btn-green" onclick="event.stopPropagation(); acceptWithDate('${id}')">ACCEPT</button><button class="btn-gray" onclick="event.stopPropagation(); editJob('${id}')">EDIT</button>`;
+        else if(j.status === 'ACCEPTED') btns = `<button class="btn-gray" onclick="event.stopPropagation(); updateStatus('${id}','QUOTE')">UNDO ACCEPT</button><button class="btn-yellow" onclick="event.stopPropagation(); takeDeposit('${id}')">DEPOSIT</button><button class="btn-blue" onclick="event.stopPropagation(); dispatchJob('${id}')">DISPATCH</button><button class="btn-gray" style="background:#555" onclick="event.stopPropagation(); acceptWithDate('${id}')">RESCHEDULE</button>`;
+        else if(j.status === 'DISPATCHED') btns = `<button class="btn-gray" onclick="event.stopPropagation(); updateStatus('${id}','ACCEPTED')">UNDO DISP</button><button class="btn-blue" onclick="event.stopPropagation(); dispatchJob('${id}')">REASSIGN</button><button class="btn-gray" style="background:#555" onclick="event.stopPropagation(); acceptWithDate('${id}')">RESCHEDULE</button>`;
+        else if(j.status === 'PAID') btns = `<button class="btn-yellow" onclick="event.stopPropagation(); finalInvoiceFlow('${id}')">PDF INVOICE</button><button class="btn-red" onclick="event.stopPropagation(); issueRefund('${id}')">REFUND</button><button class="btn-gray" onclick="event.stopPropagation(); undoPaid('${id}')">UNDO PAID</button>`;
+    } else { 
+        if(j.status === 'PAID') btns = `<div style="color:var(--green); font-weight:bold; text-align:center; padding:10px;">COMPLETED (${j.payMethod || 'PAID'})</div>`;
+        else btns = `<button class="btn-blue" onclick="event.stopPropagation(); openMap('${j.addr}', '${j.pcode}')">NAV</button><button class="btn-gray" onclick="event.stopPropagation(); vanAddNote('${id}')">ADD NOTE</button><button class="btn-green" onclick="event.stopPropagation(); vanMarkPaid('${id}')">MARK PAID</button>`; 
     }
-    loadHistory();
-};
-
-function handleLogo(i) {
-    const r = new FileReader();
-    r.onload = (e) => {
-        localStorage.setItem('torqLogo', e.target.result);
-        document.getElementById('logo-preview').src = e.target.result;
-        document.getElementById('logo-preview').style.display = 'block';
-    };
-    r.readAsDataURL(i.files[0]);
+    const ukDate = j.schedDate ? j.schedDate.split('-').reverse().join('/') : "TBC";
+    const masterBreakdown = `<div style="border-top:1px solid #333; margin-top:10px; padding-top:10px;"><div class="breakdown-row"><span>Labour:</span><span>£${(j.labourVal || 0).toFixed(2)}</span></div><div class="breakdown-row"><span>Parts:</span><span>£${(j.partsVal || 0).toFixed(2)}</span></div><div class="breakdown-row"><span>Surcharges:</span><span>£${(j.surchargeTotal || 0).toFixed(2)}</span></div>${j.discVal ? `<div class="breakdown-row" style="color:var(--red)"><span>Discount:</span><span>-£${j.discVal.toFixed(2)}</span></div>` : ''}${j.deposit ? `<div class="breakdown-row" style="color:var(--yellow)"><span>Deposit:</span><span>-£${j.deposit.toFixed(2)}</span></div>` : ''}${j.refundVal ? `<div class="breakdown-row" style="color:var(--red)"><span>REFUNDED:</span><span>-£${j.refundVal.toFixed(2)}</span></div>` : ''}<div class="breakdown-row" style="color:var(--green); font-weight:bold; font-size:1rem; border-bottom:none;"><span>TOTAL:</span><span>£${j.total.toFixed(2)}</span></div>${j.payMethod ? `<div style="font-size:0.6rem; color:#888; margin-top:5px;">Method: ${j.payMethod.toUpperCase()}</div>` : ''}</div>`;
+    return `<div class="job-item status-${j.status}" onclick="this.classList.toggle('is-open')"><div style="display:flex; justify-content:space-between"><strong class="upper">${j.reg}<span class="status-badge badge-${j.status}">${j.status}</span></strong><span>${j.id}</span></div><div style="font-size:0.75rem; color:#ccc; margin-top:4px;"><strong>${j.name}</strong> | ${j.make || 'Vehicle'}<span class="date-tag">${ukDate}</span>${j.dept ? `<span class="van-tag">${j.dept.toUpperCase()}</span>` : ''}</div><div style="font-size:0.7rem; color:#888; margin-top:2px;">${j.addr} ${j.pcode}</div><div class="details-pane"><p><strong>Work:</strong> ${j.services.join(', ')}</p>${j.notes ? `<p style="color:var(--yellow); font-size:0.75rem;"><strong>Office:</strong> ${j.notes}</p>` : ''}${j.vanNotes ? `<p style="color:var(--blue); font-size:0.75rem;"><strong>Van:</strong> ${j.vanNotes}</p>` : ''}${isMaster ? masterBreakdown : `<p style="color:var(--green); font-weight:bold;">COLLECT: £${j.total.toFixed(2)}</p>`}<div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px;">${btns}${j.status !== 'PAID' ? `<button class="btn-blue" onclick="event.stopPropagation(); window.open('tel:${j.phone}')">CALL</button>` : ''}${isMaster && j.status !== 'PAID' ? `<button class="btn-red" onclick="event.stopPropagation(); deleteJob('${id}')">DEL</button>` : ''}</div></div></div>`;
 }
 
-async function getDistance() {
-    const b = document.getElementById('basePC').value.toUpperCase().replace(/\s/g, '');
-    const d = document.getElementById('destPC').value.toUpperCase().replace(/\s/g, '');
-    if(!b || !d) return;
-    localStorage.setItem('torqBase', b);
-    try {
-        const r1 = await fetch(`https://api.postcodes.io/postcodes/${b}`).then(r => r.json());
-        const r2 = await fetch(`https://api.postcodes.io/postcodes/${d}`).then(r => r.json());
-        if(r1.status === 200 && r2.status === 200) {
-            const p1 = r1.result, p2 = r2.result;
-            const R = 3958.8, dLat = (p2.latitude-p1.latitude)*Math.PI/180, dLon = (p2.longitude-p1.longitude)*Math.PI/180;
-            const a = Math.sin(dLat/2)**2 + Math.cos(p1.latitude*Math.PI/180)*Math.cos(p2.latitude*Math.PI/180)*Math.sin(dLon/2)**2;
-            state.dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            document.getElementById('distStatus').innerText = Math.round(state.dist) + " miles";
-            calculate();
-        }
-    } catch(e){}
+function openMap(addr, pcode) { const q = encodeURIComponent(addr + " " + pcode); window.open(`https://www.google.com/maps/search/?api=1&query=${q}`); }
+function vanAddNote(id) { const n = prompt("Add note:"); if(n) { const old = cloudJobs[id].vanNotes ? cloudJobs[id].vanNotes + " | " : ""; db.ref('jobs/'+id).update({ vanNotes: old + n }); } }
+function vanMarkPaid(id) { const m = prompt("Method? (1:Cash, 2:Card, 3:Bank Transfer)"); const methods = {"1":"Cash","2":"Card","3":"Bank Transfer"}; if(methods[m]) db.ref('jobs/'+id).update({ status: 'PAID', payMethod: methods[m], paidAt: Date.now() }); }
+function undoPaid(id) { db.ref('jobs/'+id).update({ status: 'DISPATCHED', paidAt: null, payMethod: null }); }
+function issueRefund(id) { const amt = prompt("Refund Amount (£):"); if(amt && !isNaN(amt)) { const r = parseFloat(amt); db.ref('jobs/'+id).update({ refundVal: (cloudJobs[id].refundVal || 0) + r, total: cloudJobs[id].total - r }); } }
+
+function finalInvoiceFlow(id) {
+    const j = cloudJobs[id]; genHistoryPDF(id); 
+    if(j.email) {
+        setTimeout(() => {
+            const mailLink = document.createElement('a');
+            const sub = `Invoice - ${j.reg}`;
+            const body = `Hi ${j.name},\n\nPlease find your invoice attached for ${j.reg}.\n\nKind Regards,\nTORQ CYMRU`;
+            mailLink.href = `mailto:${j.email}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
+            mailLink.click();
+        }, 1500);
+    }
 }
 
-function calculate() {
-    const uM = parseFloat(document.getElementById('usageType').value);
-    const sM = parseFloat(document.getElementById('vehSize').value);
-    const tM = parseFloat(document.getElementById('vehTier').value);
-    const baseMultiplier = sM * tM;
-
-    state.labT = 0;
+function calc() {
+    const u = parseFloat(document.getElementById('mUsage').value), s = parseFloat(document.getElementById('mSize').value), t = parseFloat(document.getElementById('mTier').value);
+    let labor = 0, activeSurs = [];
     document.querySelectorAll('.j-chk:checked').forEach(c => {
-        const j = jobs.find(x => x.id === c.value);
-        if(j.id === 'dpf') state.labT += j.f;
-        else state.labT += Math.round((j.f ? j.f : (j.h * j.r * baseMultiplier)) * 2) / 2;
+        const j = stdJobs.find(x => x.id === c.value);
+        if(j.id === 'dia') labor += liveFees.diag; else if(j.id === 'dpf') labor += liveFees.dpf; else if(j.id === 'bt1') labor += liveFees.batt1; else if(j.id === 'bt2') labor += liveFees.batt2;
+        else { let r = liveRates.srv; if(j.r === 60) r = liveRates.brk; if(j.r === 65) r = liveRates.mech; labor += (j.h * r * s * t); }
     });
-    const cH = parseFloat(document.getElementById('customHours').value) || 0;
-    state.labT += Math.round((cH * 60 * baseMultiplier) * 2) / 2;
-
-    const dI = document.getElementById('discIn').value;
-    state.disc = dI.endsWith('%') ? (state.labT * parseFloat(dI)/100) : (parseFloat(dI) || 0);
-    
-    state.partsT = parseFloat(document.getElementById('partsCost').value) || 0;
-    state.travel = state.dist > 10 ? (state.dist - 10) * 1.0 : 0;
-    state.env = document.getElementById('envFee').checked ? 5 : 0;
-    state.emer = document.getElementById('emergeFee').checked ? 50 : 0;
-    state.sun = document.getElementById('sundayFee').checked ? 25 : 0;
-    
-    const subTotal = (state.labT - state.disc) + state.partsT + state.travel + state.env + state.emer + state.sun;
-    state.vat = (uM > 1) ? (subTotal * 0.20) : 0;
-    state.t = subTotal + state.vat;
-    
-    document.getElementById('vatDisplay').innerText = "VAT: £" + state.vat.toFixed(2);
-    document.getElementById('resTotal').innerText = "£" + state.t.toFixed(2);
+    labor += ((parseFloat(document.getElementById('mCustomHours').value)||0) * liveRates.mech * s * t);
+    if(curDist > liveSurs.radius) activeSurs.push({n:"Travel Surcharge", v:(curDist-liveSurs.radius)*liveSurs.travelRate});
+    if(document.getElementById('mAcc').checked) activeSurs.push({n:"Access Fee", v:liveSurs.acc});
+    if(document.getElementById('mOOH').checked) activeSurs.push({n:"Out of Hours Fee", v:liveSurs.ooh});
+    if(document.getElementById('mEm').checked) activeSurs.push({n:"Emergency Fee", v:liveSurs.em});
+    if(document.getElementById('mEnv').checked) activeSurs.push({n:"Environmental Disposal Fee", v:liveSurs.env});
+    const st = activeSurs.reduce((a,b)=>a+b.v, 0); const pts = parseFloat(document.getElementById('mParts').value)||0;
+    const sub = (labor + pts + st) * u; const dIn = parseFloat(document.getElementById('mDiscount').value)||0;
+    let dV = document.getElementById('mDiscType').value === 'perc' ? (sub * (dIn / 100)) : dIn;
+    dV = Math.round(dV * 100) / 100; const fin = Math.round((sub - dV) * 100) / 100;
+    document.getElementById('mDispTotal').innerText = "£" + Math.max(0, fin).toFixed(2);
+    return { labor: labor * u, parts: pts * u, surchargeTotal: st * u, activeSurs, sub, discount: dV, total: fin, rawDisc: dIn, dType: document.getElementById('mDiscType').value };
 }
 
-function saveJob() {
-    if(!state.ref) state.ref = "TQ-" + Math.floor(1000 + Math.random() * 9000);
-    const existing = JSON.parse(localStorage.getItem("TQR_" + state.ref)) || {};
-    const selectedJobs = Array.from(document.querySelectorAll('.j-chk:checked')).map(c => c.value);
-    const data = {
-        ref: state.ref, n: document.getElementById('custName').value, ph: document.getElementById('custPhone').value,
-        wa: document.getElementById('workAddr').value, r: document.getElementById('vehReg').value,
-        m: document.getElementById('makeModel').value, nt: document.getElementById('jobNotes').value,
-        u: document.getElementById('usageType').value, s: document.getElementById('vehSize').value, tM: document.getElementById('vehTier').value,
-        jobs: selectedJobs, parts: document.getElementById('partsCost').value, env: document.getElementById('envFee').checked,
-        em: document.getElementById('emergeFee').checked, su: document.getElementById('sundayFee').checked,
-        di: document.getElementById('discIn').value, t: state.t, vat: state.vat, date: new Date().toLocaleDateString('en-GB'),
-        paid: existing.paid || false, done: existing.done || false
-    };
-    localStorage.setItem("TQR_" + state.ref, JSON.stringify(data));
-    loadHistory();
+function saveJob(stat) {
+    const v = calc(); const ref = editId || "TQ-" + Math.floor(1000 + Math.random() * 8999);
+    const svcs = Array.from(document.querySelectorAll('.j-chk:checked')).map(c => stdJobs.find(x => x.id === c.value).n);
+    const surs = { acc: document.getElementById('mAcc').checked, ooh: document.getElementById('mOOH').checked, em: document.getElementById('mEm').checked, env: document.getElementById('mEnv').checked };
+    const dep = editId ? (cloudJobs[editId].deposit || 0) : 0;
+    db.ref("jobs/"+ref).update({ id:ref, status: editId ? cloudJobs[editId].status : stat, name:document.getElementById('mCust').value, phone:document.getElementById('mPhone').value, email:document.getElementById('mEmail').value, reg:document.getElementById('mReg').value.toUpperCase(), make:document.getElementById('mMake').value, pcode:document.getElementById('mPcode').value.toUpperCase(), addr:document.getElementById('mAddr').value, notes: document.getElementById('mOfficeNotes').value, total: v.total - dep, labourVal: v.labor, partsVal: v.parts, surchargeTotal: v.surchargeTotal, activeSurs: v.activeSurs, discVal: v.discount, deposit: dep, services:svcs, ts: editId ? cloudJobs[editId].ts : Date.now(), surchargeData: surs, discInput: v.rawDisc, discType: v.dType, schedDate: editId ? (cloudJobs[editId].schedDate || "") : "" }); 
+    alert("Synced."); if(editId) { resetBuilder(); switchTab('active'); }
 }
 
-function loadQuote(k) {
-    const d = JSON.parse(localStorage.getItem(k));
-    document.getElementById('custName').value = d.n;
-    document.getElementById('custPhone').value = d.ph;
-    document.getElementById('workAddr').value = d.wa;
-    document.getElementById('vehReg').value = d.r;
-    document.getElementById('makeModel').value = d.m;
-    document.getElementById('jobNotes').value = d.nt;
-    document.getElementById('usageType').value = d.u;
-    document.getElementById('vehSize').value = d.s;
-    document.getElementById('vehTier').value = d.tM;
-    document.getElementById('partsCost').value = d.parts;
-    document.getElementById('envFee').checked = d.env;
-    document.getElementById('emergeFee').checked = d.em;
-    document.getElementById('sundayFee').checked = d.su;
-    document.getElementById('discIn').value = d.di;
-    document.querySelectorAll('.j-chk').forEach(c => c.checked = d.jobs.includes(c.value));
-    state.ref = d.ref;
-    calculate();
+function genPDF(type = 'RECORD') {
+    const { jsPDF } = window.jspdf; const doc = new jsPDF(); const v = calc(); const reg = document.getElementById('mReg').value.toUpperCase() || "JOB";
+    if(logoB64) { try { doc.addImage(logoB64, 'JPEG', 85, 10, 40, 40); } catch(e) {} }
+    doc.setFontSize(22); doc.setTextColor(200, 16, 46); doc.text("TORQ CYMRU", 105, 60, { align: "center" });
+    doc.setFontSize(10); doc.setTextColor(100); doc.text(type === 'QUOTE' ? "OFFICIAL QUOTATION" : "OFFICIAL SERVICE RECORD", 105, 68, { align: "center" });
+    doc.setDrawColor(0); doc.line(20, 75, 190, 75); doc.setFontSize(12); doc.setTextColor(0);
+    doc.text(`CLIENT: ${document.getElementById('mCust').value}`, 20, 85); doc.text(`REG: ${reg}`, 20, 92);
+    doc.text(`DATE: ${new Date().toLocaleDateString('en-GB')}`, 140, 85); doc.text(`ID: TQ-${Math.floor(1000 + Math.random() * 9000)}`, 140, 92);
+    doc.setFontSize(14); doc.text("WORK DETAILS:", 20, 115); doc.setFontSize(11); let y = 125;
+    document.querySelectorAll('.j-chk:checked').forEach(c => { doc.text(`- ${stdJobs.find(x=>x.id===c.value).n}`, 25, y); y += 7; });
+    y = Math.max(y + 10, 160); doc.line(20, y, 190, y); y += 10;
+    doc.text("Labour Subtotal", 20, y); doc.text(`£${v.labor.toFixed(2)}`, 170, y, { align: "right" }); y += 7;
+    if(v.parts > 0) { doc.text("Parts", 20, y); doc.text(`£${v.parts.toFixed(2)}`, 170, y, { align: "right" }); y += 7; }
+    v.activeSurs.forEach(s => { doc.text(s.n, 20, y); doc.text(`£${s.v.toFixed(2)}`, 170, y, { align: "right" }); y += 7; });
+    if(v.discount > 0) { doc.setTextColor(200, 16, 46); doc.text("Discount Applied", 20, y); doc.text(`-£${v.discount.toFixed(2)}`, 170, y, { align: "right" }); y += 7; doc.setTextColor(0); }
+    y += 12; doc.setFontSize(22); doc.setTextColor(0, 177, 64); doc.text(`TOTAL: £${Math.max(0, v.total).toFixed(2)}`, 190, y, { align: "right" });
+    doc.save(`TQ_DOC_${reg}.pdf`);
 }
 
-function toggleState(k, prop) {
-    let d = JSON.parse(localStorage.getItem(k));
-    d[prop] = !d[prop];
-    localStorage.setItem(k, JSON.stringify(d));
-    loadHistory();
+function genHistoryPDF(id) {
+    const j = cloudJobs[id]; const { jsPDF } = window.jspdf; const doc = new jsPDF();
+    if(logoB64) { try { doc.addImage(logoB64, 'JPEG', 85, 10, 40, 40); } catch(e) {} }
+    doc.setFontSize(22); doc.setTextColor(200, 16, 46); doc.text("TORQ CYMRU", 105, 60, { align: "center" });
+    doc.setFontSize(10); doc.setTextColor(100); doc.text("OFFICIAL SERVICE RECORD", 105, 68, { align: "center" });
+    doc.setDrawColor(0); doc.line(20, 75, 190, 75); doc.setFontSize(12); doc.setTextColor(0);
+    doc.text(`CLIENT: ${j.name}`, 20, 85); doc.text(`REG: ${j.reg}`, 20, 92);
+    doc.text(`DATE: ${new Date(j.paidAt || j.ts).toLocaleDateString('en-GB')}`, 140, 85); doc.text(`ID: ${j.id}`, 140, 92);
+    doc.setFontSize(14); doc.text("WORK DETAILS:", 20, 115); doc.setFontSize(11); let y = 125;
+    j.services.forEach(s => { doc.text(`- ${s}`, 25, y); y += 7; });
+    y = Math.max(y + 10, 160); doc.line(20, y, 190, y); y += 10;
+    doc.text("Labour Total", 20, y); doc.text(`£${(j.labourVal||0).toFixed(2)}`, 170, y, { align: "right" }); y += 7;
+    if(j.partsVal > 0) { doc.text("Parts", 20, y); doc.text(`£${j.partsVal.toFixed(2)}`, 170, y, { align: "right" }); y += 7; }
+    if(j.activeSurs) j.activeSurs.forEach(s => { doc.text(s.n, 20, y); doc.text(`£${s.v.toFixed(2)}`, 170, y, { align: "right" }); y += 7; });
+    if(j.discVal > 0) { doc.setTextColor(200, 16, 46); doc.text("Discount", 20, y); doc.text(`-£${j.discVal.toFixed(2)}`, 170, y, { align: "right" }); y += 7; doc.setTextColor(0); }
+    if(j.refundVal > 0) { doc.setTextColor(200, 16, 46); doc.text("Refund Issued", 20, y); doc.text(`-£${j.refundVal.toFixed(2)}`, 170, y, { align: "right" }); y += 7; doc.setTextColor(0); }
+    y += 12; doc.setFontSize(22); doc.setTextColor(0, 177, 64); doc.text(`TOTAL PAID: £${j.total.toFixed(2)}`, 190, y, { align: "right" });
+    doc.save(`TQ_INVOICE_${j.reg}.pdf`);
 }
 
-function loadHistory() {
-    const l = document.getElementById('savedList'), s = document.getElementById('histSearch').value.toUpperCase();
-    l.innerHTML = "";
-    Object.keys(localStorage).filter(k => k.startsWith("TQR_")).sort().reverse().forEach(k => {
-        const d = JSON.parse(localStorage.getItem(k));
-        const matchesName = d.n.toUpperCase().includes(s) || d.r.includes(s) || d.ref.includes(s);
-        const matchesPaid = (s === "PAID" && d.paid) || (s === "UNPAID" && !d.paid);
-        const matchesDone = (s === "DONE" && d.done) || (s === "TODO" && !d.done);
-        if(!s || matchesName || matchesPaid || matchesDone) {
-            l.innerHTML += `<div class="saved-item">
-                <div style="display:flex; justify-content:space-between"><span>${d.date}</span><strong>${d.ref}</strong></div>
-                <div style="font-size:11px;">${d.r} - ${d.n}</div>
-                <div style="text-align:right; font-weight:bold; color:var(--green);">£${d.t.toFixed(2)}</div>
-                <div class="status-row">
-                    <button class="status-btn" onclick="toggleState('${k}','done')" style="background:${d.done?'var(--blue)':'#444'}">${d.done?'DONE':'TODO'}</button>
-                    <button class="status-btn" onclick="toggleState('${k}','paid')" style="background:${d.paid?'var(--green)':'#444'}">${d.paid?'PAID':'UNPAID'}</button>
-                    <button class="status-btn" onclick="loadQuote('${k}')" style="background:#666">LOAD</button>
-                    <button class="status-btn" style="background:var(--red); width:30px;" onclick="if(confirm('Del?')){localStorage.removeItem('${k}');loadHistory();}">X</button>
-                </div>
-            </div>`;
-        }
-    });
-}
+function purgeArchive() { const p = prompt("Purge Pass:"); if(p === aPass) { if(confirm("Purge all?")) db.ref("jobs").remove(); closeCog(); } }
+function triggerLogoUpload() { if(isMaster) document.getElementById('logoInput').click(); }
+function handleLogoFile(input) { const reader = new FileReader(); reader.onload = (e) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); const maxW = 300; canvas.width = maxW; canvas.height = img.height * (maxW / img.width); canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height); logoB64 = canvas.toDataURL('image/jpeg', 0.7); db.ref("settings/logo").set(logoB64); document.getElementById('appLogo').src = logoB64; document.getElementById('appLogo').style.display = 'block'; }; img.src = e.target.result; }; reader.readAsDataURL(input.files[0]); }
+function handleDistance() { const pc = document.getElementById('mPcode').value.toUpperCase(); if(pc.length < 5) return; fetch(`https://api.postcodes.io/postcodes/${pc}`).then(r=>r.json()).then(d=>{ if(d.status === 200) { const R = 3958.8; const la1 = 51.5761, lo1 = -3.2173; const dLat = (d.result.latitude-la1)*Math.PI/180; const dLon = (d.result.longitude-lo1)*Math.PI/180; const a = Math.sin(dLat/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(d.result.latitude*Math.PI/180)*Math.sin(dLon/2)**2; curDist = 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); document.getElementById('mTravelInfo').innerText = `Distance: ${curDist.toFixed(1)} mi`; calc(); }});}
+function switchTab(t) { if(t !== 'build') editId = null; document.querySelectorAll('.view-panel, .tab').forEach(p => p.classList.remove('active')); document.getElementById('panel-'+t).classList.add('active'); document.getElementById('tab-'+t).classList.add('active'); render(); }
+function updateStatus(id, s) { db.ref('jobs/'+id).update({status: s}); }
+function acceptWithDate(id) { if(!isMaster) return; const d = prompt("Enter Date (DD/MM/YYYY):", new Date().toLocaleDateString('en-GB')); if(d) { const p = d.split('/'); if(p.length === 3) { db.ref('jobs/'+id).update({ status: (cloudJobs[id].status === 'QUOTE' ? 'ACCEPTED' : cloudJobs[id].status), schedDate: `${p[2]}-${p[1]}-${p[0]}` }); } else { alert("Use DD/MM/YYYY"); } } }
+function copyQuote() { const v = calc(); let ptsLine = v.parts > 0 ? `Parts: £${v.parts.toFixed(2)}\n` : ""; let sList = ""; v.activeSurs.forEach(s => sList += `+ ${s.n}: £${s.v.toFixed(2)}\n`); let discStr = v.discount > 0 ? `DISCOUNT: -£${v.discount.toFixed(2)}\n` : ""; const t = `TORQ CYMRU\nReg: ${document.getElementById('mReg').value.toUpperCase()}\nWork: ${Array.from(document.querySelectorAll('.j-chk:checked')).map(c=>stdJobs.find(x=>x.id===c.value).n).join(', ')}\n\nLabour: £${v.labor.toFixed(2)}\n${ptsLine}${sList}${discStr}TOTAL: £${v.total.toFixed(2)}`; const el = document.createElement('textarea'); el.value = t; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); alert("Copied."); }
+function takeDeposit(id) { const amt = prompt("Deposit (£):"); if(amt && !isNaN(amt)) { const d = Math.round(parseFloat(amt)*100)/100; db.ref('jobs/'+id).update({ deposit: d, total: Math.round((cloudJobs[id].total - d)*100)/100 }); } }
+function dispatchJob(id) { const v = prompt("Van (1:Mech1, 2:Mech2, 3:Tyres, 4:Lock, 5:Rec):"); const depts = {"1":"Mechanic 1","2":"Mechanic 2","3":"Tyres","4":"Locksmith","5":"Recovery"}; if(depts[v]) db.ref('jobs/'+id).update({ status: 'DISPATCHED', dept: depts[v] }); }
+function deleteJob(id) { if(confirm('Delete?')) db.ref('jobs/'+id).remove(); }
+function openCog() { document.getElementById('cogModal').style.display='flex'; syncCogUI(); }
+function closeCog() { document.getElementById('cogModal').style.display='none'; }
+function resetBuilderUI() { document.querySelectorAll('input, textarea').forEach(i => { if(i.type==='checkbox') i.checked=false; else i.value=''; }); document.getElementById('mUsage').value = "1"; document.getElementById('mSize').value = "1.0"; document.getElementById('mTier').value = "1.0"; document.getElementById('mDiscType').value = "val"; }
+function resetBuilder() { editId = null; document.getElementById('saveBtn').innerText = "SAVE QUOTE"; resetBuilderUI(); curDist = 0; document.getElementById('mTravelInfo').innerText = "Distance: 0 mi"; calc(); }
 
-function copyWick() {
-    let msg = `*TORQ CYMRU*\nRef: ${state.ref}\nReg: ${document.getElementById('vehReg').value}\n---\n`;
-    if(state.partsT > 0) msg += `Total Parts: £${state.partsT.toFixed(2)}\n`;
-    if(state.labT > 0) msg += `Total Labour: £${state.labT.toFixed(2)}\n`;
-    if(state.travel > 0) msg += `Call-Out/Travel: £${state.travel.toFixed(2)}\n`;
-    if(state.env > 0) msg += `Env Fee: £5.00\n`;
-    if(state.emer > 0) msg += `Emergency Fee: £50.00\n`;
-    if(state.sun > 0) msg += `Sunday Fee: £25.00\n`;
-    if(state.disc > 0) msg += `Discount: -£${state.disc.toFixed(2)}\n`;
-    if(state.vat > 0) msg += `VAT (20%): £${state.vat.toFixed(2)}\n`;
-    if(document.getElementById('jobNotes').value) msg += `\n*Notes:*\n${document.getElementById('jobNotes').value}\n`;
-    msg += `---\n*TOTAL: £${state.t.toFixed(2)}*`;
-    const el = document.createElement('textarea'); el.value = msg; document.body.appendChild(el); el.select();
-    try { document.execCommand('copy'); alert("WhatsApp Quote Copied!"); } catch(e) {}
-    document.body.removeChild(el);
-}
-
-function enterQuote() {
-    const lD = localStorage.getItem('torqLogo');
-    if(lD) document.getElementById('pdf-logo-box').innerHTML = `<img src="${lD}" style="max-height:80px;">`;
-    
-    const isComm = parseFloat(document.getElementById('usageType').value) > 1;
-    const vNo = document.getElementById('vatNum').value;
-    if(isComm && vNo) { document.getElementById('pVatRow').style.display = 'block'; document.getElementById('pVatVal').innerText = vNo; } 
-    else { document.getElementById('pVatRow').style.display = 'none'; }
-
-    if(document.getElementById('showBank').checked) {
-        document.getElementById('pBankArea').style.display = 'block';
-        document.getElementById('pbName').innerText = document.getElementById('bankName').value || "TBC";
-        document.getElementById('pbSort').innerText = document.getElementById('bankSort').value || "TBC";
-        document.getElementById('pbAcc').innerText = document.getElementById('bankAcc').value || "TBC";
-    } else { document.getElementById('pBankArea').style.display = 'none'; }
-
-    document.getElementById('pdfDate').innerText = new Date().toLocaleDateString('en-GB');
-    document.getElementById('pName').innerText = document.getElementById('custName').value || "Client";
-    document.getElementById('pPhone').innerText = document.getElementById('custPhone').value || "N/A";
-    document.getElementById('pAddr').innerText = document.getElementById('workAddr').value || "N/A";
-    document.getElementById('pReg').innerText = document.getElementById('vehReg').value || "N/A";
-    document.getElementById('pVeh').innerText = document.getElementById('makeModel').value || "Vehicle TBC";
-    document.getElementById('pRef').innerText = state.ref;
-    
-    let h = "";
-    if(state.partsT > 0) h += `<tr><td>Total Parts & Materials</td><td style="text-align:right;">£${state.partsT.toFixed(2)}</td></tr>`;
-    if(state.labT > 0) h += `<tr><td>Total Skilled Labour</td><td style="text-align:right;">£${state.labT.toFixed(2)}</td></tr>`;
-    if(state.travel > 0) h += `<tr><td>Call-Out/Travel</td><td style="text-align:right;">£${state.travel.toFixed(2)}</td></tr>`;
-    if(state.env > 0) h += `<tr><td>Environmental Fee</td><td style="text-align:right;">£5.00</td></tr>`;
-    if(state.emer > 0) h += `<tr><td>Emergency Surcharge</td><td style="text-align:right;">£50.00</td></tr>`;
-    if(state.sun > 0) h += `<tr><td>Sunday Surcharge</td><td style="text-align:right;">£25.00</td></tr>`;
-    if(state.disc > 0) h += `<tr><td>Labour Discount</td><td style="text-align:right;">-£${state.disc.toFixed(2)}</td></tr>`;
-    if(state.vat > 0) h += `<tr style="color:#777; font-style:italic;"><td>VAT (20%)</td><td style="text-align:right;">£${state.vat.toFixed(2)}</td></tr>`;
-    document.getElementById('pBody').innerHTML = h;
-
-    const n = document.getElementById('jobNotes').value;
-    const nA = document.getElementById('pNotes');
-    if(n) { nA.innerText = n; nA.style.display = 'block'; } else { nA.style.display = 'none'; }
-    
-    document.getElementById('pTotal').innerText = "£" + state.t.toFixed(2);
-    document.getElementById('main-ui').style.display = 'none';
-    document.getElementById('quote-container').style.display = 'block';
-}
-
-function exitQuote() { document.getElementById('quote-container').style.display = 'none'; document.getElementById('main-ui').style.display = 'flex'; }
-function finalDownload() {
-    document.getElementById('pdf-bar').style.display = 'none';
-    html2pdf().from(document.getElementById('render-area')).save(`TORQ_${state.ref}.pdf`).then(()=>document.getElementById('pdf-bar').style.display='flex');
-}
-
-function clearForm() {
-    document.querySelectorAll('.j-chk').forEach(c => c.checked = false);
-    ['customName','customHours','custName','custPhone','workAddr','vehReg','makeModel','jobNotes','partsCost','discIn','envFee','emergeFee','sundayFee'].forEach(id => {
-        let el = document.getElementById(id); if(el.type === 'checkbox') el.checked = false; else el.value = "";
-    });
-    state.dist = 0; state.ref = ''; document.getElementById('distStatus').innerText = "0 miles"; calculate();
-}
+window.onload = () => { 
+    const grid = document.getElementById('mGrid'); 
+    stdJobs.forEach(j => grid.innerHTML += `<label class="job-card"><input type="checkbox" class="j-chk" value="${j.id}" onchange="calc()"> ${j.n}</label>`); 
+};
 </script>
 </body>
 </html>
