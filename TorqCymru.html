@@ -3,10 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TORQ CYMRU | SOVEREIGN v16.70</title>
+    <title>TORQ CYMRU | SOVEREIGN v16.71</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="apple-touch-icon" href="icon.png">
+
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <style>
         :root { --red: #C8102E; --green: #00B140; --blue: #007BFF; --yellow: #FFD700; --dark: #0a0a0a; --panel: #161616; --border: #2a2a2a; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: #eee; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -27,7 +35,6 @@
         .view-panel { display: none; } .view-panel.active { display: block !important; }
         .job-item { padding: 15px; background: #111; margin-bottom: 10px; border-radius: 12px; border-left: 8px solid #333; cursor: pointer; position: relative; }
         .status-badge { font-size: 0.55rem; padding: 2px 6px; border-radius: 4px; font-weight: 900; margin-left: 8px; vertical-align: middle; }
-        .van-tag { font-size: 0.55rem; background: var(--blue); color: white; padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: bold; }
         .date-tag { font-size: 0.55rem; background: #333; color: var(--yellow); padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: bold; }
         .status-QUOTE { border-left-color: var(--red); } .badge-QUOTE { background: var(--red); color: white; }
         .status-ACCEPTED { border-left-color: var(--yellow); } .badge-ACCEPTED { background: var(--yellow); color: black; }
@@ -43,6 +50,7 @@
         .stats-header { background: #000; border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-around; text-align: center; }
         .stat-box span { display: block; font-size: 0.6rem; color: #888; text-transform: uppercase; }
         .stat-box strong { font-size: 1.1rem; color: var(--green); }
+        .van-tag { font-size: 0.55rem; background: var(--blue); color: white; padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: bold; }
     </style>
 </head>
 <body id="appBody">
@@ -238,11 +246,11 @@ function buildCard(j, id) {
         else btns = `<button class="btn-blue" onclick="event.stopPropagation(); openMap('${j.addr}', '${j.pcode}')">NAV</button><button class="btn-gray" onclick="event.stopPropagation(); vanAddNote('${id}')">ADD NOTE</button><button class="btn-green" onclick="event.stopPropagation(); vanMarkPaid('${id}')">MARK PAID</button>`; 
     }
     const ukDate = j.schedDate ? j.schedDate.split('-').reverse().join('/') : "TBC";
-    const masterBreakdown = `<div style="border-top:1px solid #333; margin-top:10px; padding-top:10px;"><div class="breakdown-row"><span>Labour:</span><span>£${(j.labourVal || 0).toFixed(2)}</span></div><div class="breakdown-row"><span>Parts:</span><span>£${(j.partsVal || 0).toFixed(2)}</span></div><div class="breakdown-row"><span>Surcharges:</span><span>£${(j.surchargeTotal || 0).toFixed(2)}</span></div>${j.discVal ? `<div class="breakdown-row" style="color:var(--red)"><span>Discount:</span><span>-£${j.discVal.toFixed(2)}</span></div>` : ''}${j.deposit ? `<div class="breakdown-row" style="color:var(--yellow)"><span>Deposit:</span><span>-£${j.deposit.toFixed(2)}</span></div>` : ''}${j.refundVal ? `<div class="breakdown-row" style="color:var(--red)"><span>REFUNDED:</span><span>-£${j.refundVal.toFixed(2)}</span></div>` : ''}<div class="breakdown-row" style="color:var(--green); font-weight:bold; font-size:1rem; border-bottom:none;"><span>TOTAL:</span><span>£${j.total.toFixed(2)}</span></div>${j.payMethod ? `<div style="font-size:0.6rem; color:#888; margin-top:5px;">Method: ${j.payMethod.toUpperCase()}</div>` : ''}</div>`;
+    const masterBreakdown = `<div style="border-top:1px solid #333; margin-top:10px; padding-top:10px;"><div class="breakdown-row"><span>Labour:</span><span>£${(j.labourVal || 0).toFixed(2)}</span></div><div class="breakdown-row"><span>Parts:</span><span>£${(j.partsVal || 0).toFixed(2)}</span></div><div class="breakdown-row"><span>Surcharges:</span><span>£${(j.surchargeTotal || 0).toFixed(2)}</span></div>${j.discVal ? `<div class="breakdown-row" style="color:var(--red)"><span>Discount:</span><span>-£${j.discVal.toFixed(2)}</span></div>` : ''}${j.deposit ? `<div class="breakdown-row" style="color:var(--yellow)"><span>Deposit Paid:</span><span>-£${j.deposit.toFixed(2)}</span></div>` : ''}${j.refundVal ? `<div class="breakdown-row" style="color:var(--red)"><span>REFUNDED:</span><span>-£${j.refundVal.toFixed(2)}</span></div>` : ''}<div class="breakdown-row" style="color:var(--green); font-weight:bold; font-size:1rem; border-bottom:none;"><span>TOTAL:</span><span>£${j.total.toFixed(2)}</span></div>${j.payMethod ? `<div style="font-size:0.6rem; color:#888; margin-top:5px;">Method: ${j.payMethod.toUpperCase()}</div>` : ''}</div>`;
     return `<div class="job-item status-${j.status}" onclick="this.classList.toggle('is-open')"><div style="display:flex; justify-content:space-between"><strong class="upper">${j.reg}<span class="status-badge badge-${j.status}">${j.status}</span></strong><span>${j.id}</span></div><div style="font-size:0.75rem; color:#ccc; margin-top:4px;"><strong>${j.name}</strong> | ${j.make || 'Vehicle'}<span class="date-tag">${ukDate}</span>${j.dept ? `<span class="van-tag">${j.dept.toUpperCase()}</span>` : ''}</div><div style="font-size:0.7rem; color:#888; margin-top:2px;">${j.addr} ${j.pcode}</div><div class="details-pane"><p><strong>Work:</strong> ${j.services.join(', ')}</p>${j.notes ? `<p style="color:var(--yellow); font-size:0.75rem;"><strong>Office:</strong> ${j.notes}</p>` : ''}${j.vanNotes ? `<p style="color:var(--blue); font-size:0.75rem;"><strong>Van:</strong> ${j.vanNotes}</p>` : ''}${isMaster ? masterBreakdown : `<p style="color:var(--green); font-weight:bold;">COLLECT: £${j.total.toFixed(2)}</p>`}<div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px;">${btns}${j.status !== 'PAID' ? `<button class="btn-blue" onclick="event.stopPropagation(); window.open('tel:${j.phone}')">CALL</button>` : ''}${isMaster && j.status !== 'PAID' ? `<button class="btn-red" onclick="event.stopPropagation(); deleteJob('${id}')">DEL</button>` : ''}</div></div></div>`;
 }
 
-function openMap(addr, pcode) { const q = encodeURIComponent(addr + " " + pcode); window.open(`https://www.google.com/maps/search/?api=1&query=${q}`); }
+function openMap(addr, pcode) { const q = encodeURIComponent(addr + " " + pcode); window.open("http://maps.google.com/?q=" + q); }
 function vanAddNote(id) { const n = prompt("Add note:"); if(n) { const old = cloudJobs[id].vanNotes ? cloudJobs[id].vanNotes + " | " : ""; db.ref('jobs/'+id).update({ vanNotes: old + n }); } }
 function vanMarkPaid(id) { const m = prompt("Method? (1:Cash, 2:Card, 3:Bank Transfer)"); const methods = {"1":"Cash","2":"Card","3":"Bank Transfer"}; if(methods[m]) db.ref('jobs/'+id).update({ status: 'PAID', payMethod: methods[m], paidAt: Date.now() }); }
 function undoPaid(id) { db.ref('jobs/'+id).update({ status: 'DISPATCHED', paidAt: null, payMethod: null }); }
@@ -252,10 +260,10 @@ function finalInvoiceFlow(id) {
     const j = cloudJobs[id]; genHistoryPDF(id); 
     if(j.email) {
         setTimeout(() => {
+            const subject = `Invoice - ${j.reg}`;
+            const body = `Hi ${j.name}, please find your invoice attached for ${j.reg}.`;
             const mailLink = document.createElement('a');
-            const sub = `Invoice - ${j.reg}`;
-            const body = `Hi ${j.name},\n\nPlease find your invoice attached for ${j.reg}.\n\nKind Regards,\nTORQ CYMRU`;
-            mailLink.href = `mailto:${j.email}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
+            mailLink.href = `mailto:${j.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
             mailLink.click();
         }, 1500);
     }
@@ -331,21 +339,19 @@ function genHistoryPDF(id) {
     doc.save(`TQ_INVOICE_${j.reg}.pdf`);
 }
 
-function purgeArchive() { const p = prompt("Purge Pass:"); if(p === aPass) { if(confirm("Purge all?")) db.ref("jobs").remove(); closeCog(); } }
 function triggerLogoUpload() { if(isMaster) document.getElementById('logoInput').click(); }
 function handleLogoFile(input) { const reader = new FileReader(); reader.onload = (e) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); const maxW = 300; canvas.width = maxW; canvas.height = img.height * (maxW / img.width); canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height); logoB64 = canvas.toDataURL('image/jpeg', 0.7); db.ref("settings/logo").set(logoB64); document.getElementById('appLogo').src = logoB64; document.getElementById('appLogo').style.display = 'block'; }; img.src = e.target.result; }; reader.readAsDataURL(input.files[0]); }
 function handleDistance() { const pc = document.getElementById('mPcode').value.toUpperCase(); if(pc.length < 5) return; fetch(`https://api.postcodes.io/postcodes/${pc}`).then(r=>r.json()).then(d=>{ if(d.status === 200) { const R = 3958.8; const la1 = 51.5761, lo1 = -3.2173; const dLat = (d.result.latitude-la1)*Math.PI/180; const dLon = (d.result.longitude-lo1)*Math.PI/180; const a = Math.sin(dLat/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(d.result.latitude*Math.PI/180)*Math.sin(dLon/2)**2; curDist = 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); document.getElementById('mTravelInfo').innerText = `Distance: ${curDist.toFixed(1)} mi`; calc(); }});}
 function switchTab(t) { if(t !== 'build') editId = null; document.querySelectorAll('.view-panel, .tab').forEach(p => p.classList.remove('active')); document.getElementById('panel-'+t).classList.add('active'); document.getElementById('tab-'+t).classList.add('active'); render(); }
 function updateStatus(id, s) { db.ref('jobs/'+id).update({status: s}); }
 function acceptWithDate(id) { if(!isMaster) return; const d = prompt("Enter Date (DD/MM/YYYY):", new Date().toLocaleDateString('en-GB')); if(d) { const p = d.split('/'); if(p.length === 3) { db.ref('jobs/'+id).update({ status: (cloudJobs[id].status === 'QUOTE' ? 'ACCEPTED' : cloudJobs[id].status), schedDate: `${p[2]}-${p[1]}-${p[0]}` }); } else { alert("Use DD/MM/YYYY"); } } }
-function copyQuote() { const v = calc(); let ptsLine = v.parts > 0 ? `Parts: £${v.parts.toFixed(2)}\n` : ""; let sList = ""; v.activeSurs.forEach(s => sList += `+ ${s.n}: £${s.v.toFixed(2)}\n`); let discStr = v.discount > 0 ? `DISCOUNT: -£${v.discount.toFixed(2)}\n` : ""; const t = `TORQ CYMRU\nReg: ${document.getElementById('mReg').value.toUpperCase()}\nWork: ${Array.from(document.querySelectorAll('.j-chk:checked')).map(c=>stdJobs.find(x=>x.id===c.value).n).join(', ')}\n\nLabour: £${v.labor.toFixed(2)}\n${ptsLine}${sList}${discStr}TOTAL: £${v.total.toFixed(2)}`; const el = document.createElement('textarea'); el.value = t; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); alert("Copied."); }
-function takeDeposit(id) { const amt = prompt("Deposit (£):"); if(amt && !isNaN(amt)) { const d = Math.round(parseFloat(amt)*100)/100; db.ref('jobs/'+id).update({ deposit: d, total: Math.round((cloudJobs[id].total - d)*100)/100 }); } }
-function dispatchJob(id) { const v = prompt("Van (1:Mech1, 2:Mech2, 3:Tyres, 4:Lock, 5:Rec):"); const depts = {"1":"Mechanic 1","2":"Mechanic 2","3":"Tyres","4":"Locksmith","5":"Recovery"}; if(depts[v]) db.ref('jobs/'+id).update({ status: 'DISPATCHED', dept: depts[v] }); }
-function deleteJob(id) { if(confirm('Delete?')) db.ref('jobs/'+id).remove(); }
+function editJob(id) { const j = cloudJobs[id]; editId = id; resetBuilderUI(); switchTab('build'); document.getElementById('mCust').value = j.name; document.getElementById('mPhone').value = j.phone; document.getElementById('mEmail').value = j.email || ""; document.getElementById('mReg').value = j.reg; document.getElementById('mMake').value = j.make || ""; document.getElementById('mPcode').value = j.pcode || ""; document.getElementById('mAddr').value = j.addr || ""; document.getElementById('mOfficeNotes').value = j.notes || ""; document.getElementById('mParts').value = j.partsVal || ""; document.getElementById('mDiscount').value = j.discInput || ""; document.getElementById('mDiscType').value = j.discType || "val"; if(j.surchargeData) { document.getElementById('mAcc').checked = j.surchargeData.acc || false; document.getElementById('mOOH').checked = j.surchargeData.ooh || false; document.getElementById('mEm').checked = j.surchargeData.em || false; document.getElementById('mEnv').checked = j.surchargeData.env || false; } document.querySelectorAll('.j-chk').forEach(c => { const jobName = stdJobs.find(x => x.id === c.value).n; c.checked = j.services.includes(jobName); }); document.getElementById('saveBtn').innerText = "UPDATE JOB"; calc(); }
+function purgeArchive() { const p = prompt("Purge Pass:"); if(p === aPass) { if(confirm("Purge all?")) db.ref("jobs").remove(); closeCog(); } }
 function openCog() { document.getElementById('cogModal').style.display='flex'; syncCogUI(); }
 function closeCog() { document.getElementById('cogModal').style.display='none'; }
 function resetBuilderUI() { document.querySelectorAll('input, textarea').forEach(i => { if(i.type==='checkbox') i.checked=false; else i.value=''; }); document.getElementById('mUsage').value = "1"; document.getElementById('mSize').value = "1.0"; document.getElementById('mTier').value = "1.0"; document.getElementById('mDiscType').value = "val"; }
 function resetBuilder() { editId = null; document.getElementById('saveBtn').innerText = "SAVE QUOTE"; resetBuilderUI(); curDist = 0; document.getElementById('mTravelInfo').innerText = "Distance: 0 mi"; calc(); }
+function copyQuote() { const v = calc(); let ptsLine = v.parts > 0 ? `Parts: £${v.parts.toFixed(2)}\n` : ""; let sList = ""; v.activeSurs.forEach(s => sList += `+ ${s.n}: £${s.v.toFixed(2)}\n`); let discStr = v.discount > 0 ? `DISCOUNT: -£${v.discount.toFixed(2)}\n` : ""; const t = `TORQ CYMRU\nReg: ${document.getElementById('mReg').value.toUpperCase()}\nWork: ${Array.from(document.querySelectorAll('.j-chk:checked')).map(c=>stdJobs.find(x=>x.id===c.value).n).join(', ')}\n\nLabour: £${v.labor.toFixed(2)}\n${ptsLine}${sList}${discStr}TOTAL: £${v.total.toFixed(2)}`; const el = document.createElement('textarea'); el.value = t; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); alert("Copied."); }
 
 window.onload = () => { 
     const grid = document.getElementById('mGrid'); 
