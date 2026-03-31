@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TORQ CYMRU | SOVEREIGN v1.5</title>
+    <!-- PWA Home Screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TORQ CYMRU">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="apple-touch-icon" href="1774740725392.png">
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiVE9SUSBDWU1SVSIsInNob3J0X25hbWUiOiJUT1JRIENZTVJVIiwic3RhcnRfdXJsIjoiVG9ycUN5bXJ1QXBwLmh0bWwiLCJkaXNwbGF5IjoiZnVsbHNjcmVlbiIsImJhY2tncm91bmRfY29sb3IiOiIjMGEwYTBhIiwidGhlbWVfY29sb3IiOiIjMGEwYTBhIiwiaWNvbnMiOlt7InNyYyI6IjE3NzQ3NDA3MjUzOTIucG5nIiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL3BuZyJ9XX0=">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root { --red:#C8102E; --green:#00B140; --blue:#007BFF; --yellow:#FFD700; --orange:#FF6B00; --dark:#0a0a0a; --panel:#161616; --border:#2a2a2a; }
+        body { font-family:'Segoe UI',sans-serif; background:var(--dark); color:#eee; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+        #startup-screen { position:fixed; inset:0; background:var(--dark); z-index:99999; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+        .van-btn { width:85%; max-width:300px; padding:18px; margin:8px; background:#1a1a1a; border:1px solid #333; color:#fff; border-radius:12px; font-weight:bold; text-align:center; cursor:pointer; }
+        header { position:sticky; top:0; background:var(--dark); z-index:1000; padding:12px 15px; border-bottom:2px solid var(--red); display:flex; justify-content:space-between; align-items:center; }
+        #main-ui { max-width:1000px; margin:0 auto; background:var(--panel); padding:15px; min-height:95vh; display:none; }
+        .master-only { display:none !important; } .is-master .master-only { display:block !important; }
+        .section-title { color:var(--red); text-transform:uppercase; font-size:0.7rem; border-bottom:1px solid var(--border); padding-bottom:5px; margin:20px 0 10px; font-weight:800; }
+        .job-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px; }
+        .job-card { background:#1f1f1f; border:1px solid var(--border); padding:12px; border-radius:8px; display:flex; align-items:center; font-size:0.8rem; cursor:pointer; }
+        .job-card input { margin-right:10px; width:18px; height:18px; accent-color:var(--red); }
+        input, select, textarea { width:100%; padding:12px; background:#111; border:1px solid var(--border); border-radius:8px; color:#fff; font-size:16px; margin-bottom:10px; box-sizing:border-box; }
+        .upper { text-transform:uppercase !important; }
+        .tabs { display:flex; gap:5px; margin:15px 0; background:#111; padding:5px; border-radius:10px; }
+        .tab { flex:1; padding:10px 4px; color:#666; border-radius:8px; text-align:center; cursor:pointer; font-weight:bold; font-size:0.7rem; position:relative; }
+        .tab.active { background:var(--red); color:#fff; }
+        .tab-badge { position:absolute; top:4px; right:4px; background:var(--yellow); color:#000; font-size:0.55rem; font-weight:900; border-radius:10px; padding:1px 5px; min-width:14px; text-align:center; }
+        .view-panel { display:none; } .view-panel.active { display:block !important; }
+        .job-item { padding:15px; background:#111; margin-bottom:10px; border-radius:12px; border-left:8px solid #333; cursor:pointer; position:relative; }
+        .job-item.expired-quote { opacity:0.5; }
+        .status-badge { font-size:0.55rem; padding:2px 6px; border-radius:4px; font-weight:900; margin-left:8px; vertical-align:middle; }
+        .van-tag { font-size:0.55rem; background:var(--blue); color:white; padding:2px 6px; border-radius:4px; margin-left:5px; font-weight:bold; }
+        .date-tag { font-size:0.55rem; background:#333; color:var(--yellow); padding:2px 6px; border-radius:4px; margin-left:5px; font-weight:bold; }
+        .repeat-tag { font-size:0.55rem; background:#7B2FBE; color:white; padding:2px 6px; border-radius:4px; margin-left:5px; font-weight:bold; }
+        .expired-tag { font-size:0.55rem; background:#555; color:#ccc; padding:2px 6px; border-radius:4px; margin-left:5px; font-weight:bold; }
+        .status-QUOTE { border-left-color:var(--red); } .badge-QUOTE { background:var(--red); color:white; }
+        .status-ACCEPTED { border-left-color:var(--yellow); } .badge-ACCEPTED { background:var(--yellow); color:black; }
+        .status-PARTS { border-left-color:var(--orange); } .badge-PARTS { background:var(--orange); color:white; }
+        .status-DISPATCHED { border-left-color:var(--blue); } .badge-DISPATCHED { background:var(--blue); color:white; }
+        .status-PAID { border-left-color:var(--green); } .badge-PAID { background:var(--green); color:white; }
+        .details-pane { display:none; padding-top:15px; border-top:1px solid #222; margin-top:10px; }
+        .is-open .details-pane { display:block; }
+        button { width:100%; padding:12px; border-radius:10px; font-weight:bold; border:none; text-transform:uppercase; cursor:pointer; margin-bottom:8px; font-size:0.7rem; color:#fff; }
+        .btn-green { background:var(--green); } .btn-blue { background:var(--blue); } .btn-red { background:var(--red); } .btn-yellow { background:var(--yellow); color:#000; } .btn-gray { background:#444; } .btn-orange { background:var(--orange); }
+        .modal { position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:100000; display:none; flex-direction:column; justify-content:center; align-items:center; padding:20px; }
+        .modal-content { background:#1a1a1a; padding:25px; border-radius:15px; width:100%; max-width:420px; border:1px solid #333; max-height:90vh; overflow-y:auto; }
+        .breakdown-row { display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:3px; border-bottom:1px solid #222; padding-bottom:2px; }
+        .stats-header { background:#000; border:1px solid var(--border); border-radius:12px; padding:15px; margin-bottom:15px; display:flex; justify-content:space-around; text-align:center; }
+        .stat-box span { display:block; font-size:0.6rem; color:#888; text-transform:uppercase; }
+        .stat-box strong { font-size:1.1rem; color:var(--green); }
+        .btn-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+        .btn-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px; }
+        .modal-title { color:var(--red); font-size:0.8rem; font-weight:800; text-transform:uppercase; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:8px; }
+        .cog-label { font-size:0.7rem; color:#aaa; margin-bottom:3px; display:block; font-weight:600; text-transform:uppercase; }
+        /* Calendar */
+        .cal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+        .cal-header button { width:auto; padding:6px 14px; font-size:1rem; margin:0; background:#333; }
+        .cal-month-label { font-weight:800; font-size:0.95rem; color:#fff; }
+        .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+        .cal-day-label { text-align:center; font-size:0.6rem; color:#888; font-weight:700; padding:4px 0; text-transform:uppercase; }
+        .cal-day { text-align:center; padding:10px 4px; border-radius:8px; font-size:0.85rem; cursor:pointer; background:#222; color:#ddd; }
+        .cal-day:hover { background:var(--blue); color:#fff; }
+        .cal-day.today { border:1px solid var(--yellow); color:var(--yellow); }
+        .cal-day.selected { background:var(--red); color:#fff; }
+        .cal-day.empty { background:transparent; cursor:default; }
+        .cal-day.past { color:#444; cursor:default; background:#181818; }
+        /* Log tabs */
+        .log-tab { text-align:center; padding:8px 4px; border-radius:8px; font-size:0.65rem; font-weight:700; text-transform:uppercase; cursor:pointer; background:#222; color:#666; }
+        .log-tab-active { background:var(--red); color:#fff; }
+        .daily-summary-row { display:flex; justify-content:space-between; font-size:0.8rem; padding:8px 0; border-bottom:1px solid #222; }
+        .daily-summary-row span:last-child { color:var(--green); font-weight:bold; }
+        /* Signature — canvas rotated 90deg for landscape signing */
+        .sig-landscape-wrap { width:100%; height:300px; display:flex; justify-content:center; align-items:center; margin-bottom:15px; overflow:hidden; }
+        #sigCanvas { background:#111; border-radius:10px; border:2px solid var(--green); touch-action:none; }
+        #paySignInner { width:100%; }
+        .pay-sign-outer { width:100%; display:flex; align-items:center; justify-content:center; overflow:visible; }
+        #sigCanvas { transform:rotate(90deg); transform-origin:center center; display:block; }
+        /* Checklist */
+        .cl-item { background:#111; border-radius:10px; margin-bottom:8px; border:1px solid #2a2a2a; overflow:hidden; }
+        .cl-item-row { display:flex; align-items:center; gap:10px; padding:10px 12px; }
+        .cl-item-label { flex:1; font-size:0.8rem; line-height:1.4; color:#ddd; }
+        .cl-btn { width:auto; padding:7px 14px; border-radius:8px; font-size:0.7rem; font-weight:900; margin:0; flex-shrink:0; }
+        .cl-btn-yes { background:#1a3a1a; color:#00B140; border:1px solid #00B140; }
+        .cl-btn-yes.active { background:var(--green); color:#fff; border-color:var(--green); }
+        .cl-btn-no  { background:#3a1a1a; color:#C8102E; border:1px solid #C8102E; }
+        .cl-btn-no.active  { background:var(--red);   color:#fff; border-color:var(--red); }
+        .cl-reason { display:none; padding:0 12px 10px; }
+        .cl-reason input { margin:0; font-size:0.8rem; padding:8px; border-color:#C8102E; }
+        .cl-item.answered-no .cl-reason { display:block; }
+        .cl-item.answered-yes .cl-item-label { color:#888; }
+        #checklistSigCanvas { background:#111; border-radius:10px; border:1px solid #333; touch-action:none; width:100%; display:block; height:140px; }
+        /* Tap transitions */
+        button { transition:opacity 0.15s, transform 0.1s; }
+        button:active { opacity:0.75; transform:scale(0.97); }
+        .van-btn { transition:background 0.15s, border-color 0.15s, transform 0.1s; }
+        .van-btn:hover { background:#242424; }
+        .van-btn:active { transform:scale(0.97); background:#2a2a2a; }
+        /* Search box */
+        .search-box { display:block; width:100%; padding:12px; background:#111; border:1px solid var(--border); border-radius:8px; color:#fff; font-size:15px; margin-bottom:12px; box-sizing:border-box; }
+        .search-box:focus { outline:none; border-color:#555; }
+        /* Builder ref — prominent */
+        #builderRef { font-size:0.8rem; font-weight:900; color:var(--yellow); letter-spacing:1.5px; padding-bottom:6px; opacity:0.9; }
+        /* WhatsApp button */
+        .btn-wa { background:#25D366; color:#fff; }
+        /* Toast notification */
+        #toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(20px); background:#1e1e1e; border:1px solid #444; color:#eee; padding:10px 22px; border-radius:30px; font-size:0.8rem; font-weight:600; z-index:999999; opacity:0; pointer-events:none; transition:opacity 0.25s, transform 0.25s; white-space:nowrap; }
+        #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+        /* Master login modal */
+        #masterLoginModal .modal-content { max-width:320px; }
+    </style>
+</head>
+<body id="appBody">
+<div id="toast"></div>
+
+<!-- MASTER LOGIN MODAL -->
+<div id="masterLoginModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-title">🔐 Master Access</div>
+        <input type="password" id="masterPassInput" placeholder="Enter master password" maxlength="50" style="margin-bottom:15px;" onkeydown="if(event.key==='Enter')submitMasterLogin()">
+        <div class="btn-grid-2">
+            <button class="btn-gray" onclick="document.getElementById('masterLoginModal').style.display='none'">CANCEL</button>
+            <button class="btn-red" onclick="submitMasterLogin()">ENTER</button>
+        </div>
+    </div>
+</div>
+
+<!-- START OF DAY CHECKLIST MODAL -->
+<div id="checklistModal" class="modal" style="z-index:999999;">
+    <div class="modal-content">
+        <div class="modal-title">☀️ Start of Day Check</div>
+        <p style="font-size:0.72rem;color:#aaa;margin-bottom:12px;" id="checklistVanLabel"></p>
+        <div class="section-title">🔧 Van &amp; Safety</div>
+        <div id="checklistSafety"></div>
+        <div class="section-title">📦 Inventory &amp; Stock</div>
+        <div id="checklistInventory"></div>
+        <div class="section-title">✍️ Sign Off</div>
+        <p style="font-size:0.7rem;color:#aaa;margin-bottom:8px;">Sign below to confirm all checks complete:</p>
+        <canvas id="checklistSigCanvas"></canvas>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+            <button class="btn-gray" onclick="clearChecklistSig()">CLEAR</button>
+            <button class="btn-green" onclick="confirmChecklist()">START DAY</button>
+        </div>
+        <p id="checklistError" style="color:var(--red);font-size:0.7rem;text-align:center;margin-top:8px;display:none;">Please answer all items (Yes or No) and sign before continuing.</p>
+    </div>
+</div>
+
+<div id="startup-screen">
+    <h2 style="font-style:italic;letter-spacing:2px;color:#fff;">TORQ CYMRU</h2>
+    <div class="van-btn" onclick="startApp('Mechanic 1')">MECHANIC 1</div>
+    <div class="van-btn" onclick="startApp('Mechanic 2')">MECHANIC 2</div>
+    <div class="van-btn" onclick="startApp('Tyres')">TYRES</div>
+    <div class="van-btn" onclick="startApp('Locksmith')">LOCKSMITH</div>
+    <div class="van-btn" onclick="startApp('Recovery')">RECOVERY</div>
+    <div class="van-btn" style="border-color:var(--red);color:var(--red);margin-top:20px;" onclick="initMasterLogin()">MASTER CONTROL</div>
+</div>
+
+<header id="appHeader" style="display:none;">
+    <div onclick="triggerLogoUpload()" style="cursor:pointer;display:flex;align-items:center;gap:12px;">
+        <img id="appLogo" style="display:none;max-height:40px;width:auto;border-radius:4px;">
+        <div style="display:flex;flex-direction:column;line-height:1.2;">
+            <h3 id="logoText" style="margin:0;font-style:italic;letter-spacing:1px;color:#fff;">TORQ CYMRU</h3>
+            <span id="vanLabel" style="font-size:0.6rem;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:none;"></span>
+        </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+        <div class="master-only" style="cursor:pointer;font-size:0.65rem;font-weight:bold;color:var(--yellow);border:1px solid var(--yellow);border-radius:8px;padding:6px 10px;" onclick="openLog('daily')">📋 LOG</div>
+        <div class="master-only" style="cursor:pointer;font-size:22px;" onclick="openCog()">⚙️</div>
+        <div id="vanExitBtn" style="display:none;cursor:pointer;font-size:0.65rem;font-weight:bold;color:#888;border:1px solid #444;border-radius:8px;padding:6px 10px;" onclick="openVanExit()">⬅ EXIT</div>
+    </div>
+</header>
+
+<div id="main-ui">
+    <div class="tabs">
+        <div class="tab master-only active" id="tab-build" onclick="switchTab('build')">BUILDER</div>
+        <div class="tab" id="tab-active" onclick="switchTab('active')">BOARD<span class="tab-badge" id="badgeActive" style="display:none;"></span></div>
+        <div class="tab master-only" id="tab-history" onclick="switchTab('history')">HISTORY</div>
+    </div>
+
+    <div id="panel-build" class="view-panel active">
+        <div class="section-title">Pricing Factors</div>
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:8px;">
+            <select id="mUsage" onchange="calc()"><option value="1">No VAT</option><option value="1.1">10% VAT</option><option value="1.2">20% VAT</option></select>
+            <select id="mSize" onchange="calc()"><option value="1.0">Small Car</option><option value="1.1">Medium Car</option><option value="1.2">Large SUV</option><option value="1.15">Small Van</option><option value="1.25">Med Van</option><option value="1.4">Large Van</option></select>
+        </div>
+        <select id="mTier" onchange="calc()" style="margin-top:8px;"><option value="1.0">Standard Rate</option><option value="1.1">Premium Rate</option><option value="1.2">Performance Rate</option></select>
+        <div class="section-title">Client &amp; Vehicle</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><input type="text" id="mCust" placeholder="Name" maxlength="80"><input type="tel" id="mPhone" placeholder="Phone" pattern="[0-9]*" inputmode="numeric" maxlength="15"></div>
+        <input type="email" id="mEmail" placeholder="Client Email" maxlength="100">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><input type="text" id="mReg" class="upper" placeholder="REG" maxlength="10"><input type="text" id="mMake" placeholder="Make/Model" maxlength="60"></div>
+        <input type="text" id="mPcode" class="upper" placeholder="POSTCODE" maxlength="8" oninput="handleDistance()">
+        <textarea id="mAddr" placeholder="Work Address" maxlength="200"></textarea>
+        <textarea id="mOfficeNotes" placeholder="Office Notes for Van..." maxlength="300"></textarea>
+        <div class="section-title">Work List</div>
+        <div class="job-grid" id="mGrid"></div>
+        <div class="section-title">Custom Job</div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;"><input type="text" id="mCustomJob" placeholder="Job description"><input type="number" id="mCustomHours" placeholder="Hrs" oninput="calc()"></div>
+        <div class="section-title">Surcharges</div>
+        <div class="job-grid">
+            <label class="job-card"><input type="checkbox" id="mAcc" onchange="calc()"> Access Fee</label>
+            <label class="job-card"><input type="checkbox" id="mOOH" onchange="calc()"> OOH Fee</label>
+            <label class="job-card"><input type="checkbox" id="mEm" onchange="calc()"> Emergency Fee</label>
+            <label class="job-card"><input type="checkbox" id="mEnv" onchange="calc()"> Env Dis Fee</label>
+        </div>
+        <input type="number" id="mParts" placeholder="Parts Cost £" min="0" step="0.01" oninput="calc()" style="margin-top:15px;">
+        <div style="display:flex;gap:5px;"><input type="number" id="mDiscount" placeholder="Discount" min="0" step="0.01" oninput="calc()"><select id="mDiscType" onchange="calc()" style="width:80px;"><option value="val">£</option><option value="perc">%</option></select></div>
+        <div id="mTravelInfo" style="font-size:0.7rem;color:var(--yellow);text-align:right;">Distance: 0 mi</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px;">
+            <div id="builderRef" style="font-size:0.75rem;font-weight:900;letter-spacing:1px;padding-bottom:6px;"></div>
+            <div id="mDispTotal" style="font-size:2.8rem;color:var(--green);font-weight:bold;text-align:right;">£0.00</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">
+            <button class="btn-green" id="saveBtn" onclick="saveJob('QUOTE')">SAVE QUOTE</button>
+            <button class="btn-blue" onclick="copyQuote()">COPY</button>
+            <button class="btn-yellow" onclick="genPDF('QUOTE')">PDF</button>
+            <button class="btn-wa" onclick="whatsappQuote()">WA</button>
+        </div>
+        <button class="btn-gray" style="width:100%;margin-top:10px;" onclick="resetBuilder()">RESET BUILDER</button>
+    </div>
+
+    <div id="panel-active" class="view-panel">
+        <div id="masterBoardFilter" class="master-only" style="margin-bottom:10px;">
+            <select id="vanFilterSelect" onchange="masterViewFilter=this.value;render()" style="margin-bottom:0;font-size:0.8rem;">
+                <option value="ALL">👑 Master</option>
+                <option value="Mechanic 1">Mechanic 1</option>
+                <option value="Mechanic 2">Mechanic 2</option>
+                <option value="Tyres">Tyres</option>
+                <option value="Locksmith">Locksmith</option>
+                <option value="Recovery">Recovery</option>
+            </select>
+        </div>
+        <input type="text" class="search-box" id="boardSearch" placeholder="Search Board..." oninput="render()">
+        <div id="active-board"></div>
+    </div>
+
+    <div id="panel-history" class="view-panel">
+        <div id="historyMasterStats" class="master-only"></div>
+        <div class="master-only" style="margin-bottom:10px;">
+            <button class="btn-gray" style="font-size:0.65rem;padding:8px;" onclick="exportCSV()">⬇ EXPORT CSV</button>
+        </div>
+        <input type="text" class="search-box" id="historySearch" placeholder="Search History..." oninput="render()">
+        <div id="history-board"></div>
+    </div>
+</div>
+
+<!-- COG MODAL -->
+<div id="cogModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color:var(--red);border-bottom:1px solid #333;padding-bottom:10px;">SYSTEM CONTROL</h3>
+        <div class="section-title">Hourly Rates (£/hr)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <div><label class="cog-label">Service Rate</label><input type="number" id="rateSrv"></div>
+            <div><label class="cog-label">Brakes Rate</label><input type="number" id="rateBrk"></div>
+            <div><label class="cog-label">Mechanic Rate</label><input type="number" id="rateMech"></div>
+        </div>
+        <div class="section-title">Fixed Fees (£)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div><label class="cog-label">Diagnostics Fee</label><input type="number" id="feeDiag"></div>
+            <div><label class="cog-label">DPF Regen Fee</label><input type="number" id="feeDpf"></div>
+            <div><label class="cog-label">Battery Standard</label><input type="number" id="feeBatt1"></div>
+            <div><label class="cog-label">Battery Start/Stop</label><input type="number" id="feeBatt2"></div>
+        </div>
+        <div class="section-title">Surcharge Fees (£)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div><label class="cog-label">Access Fee</label><input type="number" id="feeAcc"></div>
+            <div><label class="cog-label">Out of Hours Fee</label><input type="number" id="feeOOH"></div>
+            <div><label class="cog-label">Emergency Fee</label><input type="number" id="feeEm"></div>
+            <div><label class="cog-label">Environmental Disposal Fee</label><input type="number" id="feeEnv"></div>
+        </div>
+        <div class="section-title">Travel Settings</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div><label class="cog-label">Free Radius (miles)</label><input type="number" id="setRadius"></div>
+            <div><label class="cog-label">Rate Per Mile (£)</label><input type="number" id="setTravelRate" step="0.1"></div>
+        </div>
+        <div class="section-title">Security</div>
+        <input type="password" id="setMPass" placeholder="New Master Password" maxlength="50">
+        <input type="password" id="setAPass" placeholder="New Archive Password" maxlength="50">
+        <label class="cog-label" style="margin-top:8px;">Van Exit Password</label>
+        <input type="password" id="setVPass" placeholder="New Van Exit Password" maxlength="50">
+        <button class="btn-green" onclick="saveSettings()">SAVE ALL SETTINGS</button>
+        <button class="btn-red" style="margin-top:10px;" onclick="purgeArchive()">PURGE ALL DATA</button>
+        <button class="btn-gray" onclick="closeCog()">CLOSE</button>
+    </div>
+</div>
+
+<!-- DISPATCH MODAL -->
+<div id="dispatchModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-title">Dispatch Job To Van</div>
+        <div class="btn-grid-2">
+            <button class="btn-blue" onclick="confirmDispatch('Mechanic 1')">Mechanic 1</button>
+            <button class="btn-blue" onclick="confirmDispatch('Mechanic 2')">Mechanic 2</button>
+            <button class="btn-blue" onclick="confirmDispatch('Tyres')">Tyres</button>
+            <button class="btn-blue" onclick="confirmDispatch('Locksmith')">Locksmith</button>
+            <button class="btn-blue" onclick="confirmDispatch('Recovery')">Recovery</button>
+            <div></div>
+        </div>
+        <button class="btn-gray" onclick="closeDispatchModal()">CANCEL</button>
+    </div>
+</div>
+
+<!-- PAYMENT + SIGNATURE MODAL -->
+<div id="payModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-title" id="payModalTitle">Mark as Paid — Select Method</div>
+        <div id="payMethodStep">
+            <div class="btn-grid-3">
+                <button class="btn-green" onclick="selectPayMethod('Cash')">💵 Cash</button>
+                <button class="btn-green" onclick="selectPayMethod('Card')">💳 Card</button>
+                <button class="btn-green" onclick="selectPayMethod('Bank Transfer')">🏦 Bank Transfer</button>
+            </div>
+            <button class="btn-gray" onclick="closePayModal()">CANCEL</button>
+        </div>
+        <div id="paySignStep" style="display:none;">
+            <div class="pay-sign-outer">
+                <div id="paySignInner">
+                    <p style="font-size:0.75rem;color:#aaa;margin-bottom:6px;text-align:center;">✍️ Sign below — hold phone landscape</p>
+                    <div class="sig-landscape-wrap" id="sigWrap">
+                        <canvas id="sigCanvas" width="500" height="260"></canvas>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+                        <button class="btn-gray" onclick="clearSig()">CLEAR</button>
+                        <button class="btn-green" onclick="confirmPaymentWithSig()">CONFIRM PAID</button>
+                    </div>
+                    <button class="btn-gray" style="margin-top:4px;" onclick="closePayModal()">CANCEL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CALENDAR MODAL -->
+<div id="calModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-title" id="calModalTitle">Select a Date</div>
+        <div class="cal-header">
+            <button onclick="calShift(-1)">&#8249;</button>
+            <span class="cal-month-label" id="calMonthLabel"></span>
+            <button onclick="calShift(1)">&#8250;</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <button class="btn-gray" style="margin-top:14px;" onclick="closeCalModal()">CANCEL</button>
+    </div>
+</div>
+
+<!-- LOG MODAL -->
+<div id="logModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-title">📋 Business Log</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:15px;">
+            <div id="logTab-daily"   class="log-tab log-tab-active" onclick="switchLog('daily')">Daily</div>
+            <div id="logTab-weekly"  class="log-tab" onclick="switchLog('weekly')">Weekly</div>
+            <div id="logTab-monthly" class="log-tab" onclick="switchLog('monthly')">Monthly</div>
+            <div id="logTab-tax"     class="log-tab" onclick="switchLog('tax')">Tax YTD</div>
+        </div>
+        <div id="logContent"></div>
+        <button class="btn-gray" style="margin-top:10px;" onclick="document.getElementById('logModal').style.display='none'">CLOSE</button>
+    </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div id="confirmDeleteModal" class="modal">
+    <div class="modal-content" style="max-width:300px;text-align:center;">
+        <div class="modal-title" style="color:var(--red);">⚠️ Delete Job?</div>
+        <p style="font-size:0.8rem;color:#aaa;margin-bottom:20px;" id="confirmDeleteMsg">This cannot be undone.</p>
+        <div class="btn-grid-2">
+            <button class="btn-gray" onclick="document.getElementById('confirmDeleteModal').style.display='none'">CANCEL</button>
+            <button class="btn-red" id="confirmDeleteBtn">DELETE</button>
+        </div>
+    </div>
+</div>
+
+<!-- VAN NOTE MODAL -->
+<div id="vanNoteModal" class="modal">
+    <div class="modal-content" style="max-width:340px;">
+        <div class="modal-title">📝 Add Van Note</div>
+        <textarea id="vanNoteInput" placeholder="Type note here..." maxlength="300" style="height:100px;margin-bottom:12px;" onkeydown="if(event.key==='Enter'&&event.ctrlKey)submitVanNote()"></textarea>
+        <div class="btn-grid-2">
+            <button class="btn-gray" onclick="document.getElementById('vanNoteModal').style.display='none'">CANCEL</button>
+            <button class="btn-green" onclick="submitVanNote()">SAVE NOTE</button>
+        </div>
+    </div>
+</div>
+
+<!-- DEPOSIT MODAL -->
+<div id="depositModal" class="modal">
+    <div class="modal-content" style="max-width:300px;">
+        <div class="modal-title">💛 Take Deposit</div>
+        <p id="depositHint" style="font-size:0.75rem;color:#aaa;margin-bottom:8px;"></p>
+        <input type="number" id="depositAmtInput" placeholder="Deposit amount £" min="0" step="0.01" style="margin-bottom:12px;" onkeydown="if(event.key==='Enter')submitDeposit()">
+        <div class="btn-grid-2">
+            <button class="btn-gray" onclick="document.getElementById('depositModal').style.display='none'">CANCEL</button>
+            <button class="btn-yellow" onclick="submitDeposit()">APPLY DEPOSIT</button>
+        </div>
+    </div>
+</div>
+
+<!-- REFUND MODAL -->
+<div id="refundModal" class="modal">
+    <div class="modal-content" style="max-width:300px;">
+        <div class="modal-title">↩️ Issue Refund</div>
+        <p id="refundHint" style="font-size:0.75rem;color:#aaa;margin-bottom:8px;"></p>
+        <input type="number" id="refundAmtInput" placeholder="Refund amount £" min="0" step="0.01" style="margin-bottom:12px;" onkeydown="if(event.key==='Enter')submitRefund()">
+        <div class="btn-grid-2">
+            <button class="btn-gray" onclick="document.getElementById('refundModal').style.display='none'">CANCEL</button>
+            <button class="btn-red" onclick="submitRefund()">ISSUE REFUND</button>
+        </div>
+    </div>
+</div>
+
+<!-- PURGE PASSWORD MODAL -->
+<div id="purgeModal" class="modal">
+    <div class="modal-content" style="max-width:320px;">
+        <div class="modal-title" style="color:var(--red);">🗑 Purge All Data</div>
+        <p style="font-size:0.8rem;color:#aaa;margin-bottom:12px;">Enter archive password to continue.</p>
+        <input type="password" id="purgePassInput" placeholder="Archive password" maxlength="50" style="margin-bottom:12px;" onkeydown="if(event.key==='Enter')submitPurge()">
+        <div class="btn-grid-2">
+            <button class="btn-gray" onclick="document.getElementById('purgeModal').style.display='none'">CANCEL</button>
+            <button class="btn-red" onclick="submitPurge()">CONTINUE</button>
+        </div>
+    </div>
+</div>
+
+<!-- PURGE CONFIRM MODAL -->
+<div id="purgeConfirmModal" class="modal">
+    <div class="modal-content" style="max-width:300px;text-align:center;">
+        <div class="modal-title" style="color:var(--red);">⚠️ Final Warning</div>
+        <p style="font-size:0.8rem;color:#aaa;margin-bottom:20px;">This will permanently delete <strong style="color:#fff;">every single job</strong> from the database. This cannot be undone.</p>
+        <div class="btn-grid-2">
+            <button class="btn-gray" onclick="document.getElementById('purgeConfirmModal').style.display='none'">CANCEL</button>
+            <button class="btn-red" onclick="confirmPurge()">PURGE EVERYTHING</button>
+        </div>
+    </div>
+</div>
+
+<!-- CONFIRM ACTION MODAL -->
+<div id="confirmActionModal" class="modal">
+    <div class="modal-content" style="max-width:300px;text-align:center;">
+        <div class="modal-title" id="confirmActionTitle">Confirm</div>
+        <p style="font-size:0.8rem;color:#aaa;margin-bottom:20px;" id="confirmActionMsg"></p>
+        <div class="btn-grid-2">
+            <button class="btn-gray" onclick="document.getElementById('confirmActionModal').style.display='none'">CANCEL</button>
+            <button class="btn-red" id="confirmActionBtn" onclick="runConfirmedAction()">CONFIRM</button>
+        </div>
+    </div>
+</div>
+
+<!-- VAN EXIT MODAL -->
+<div id="vanExitModal" class="modal">
+    <div class="modal-content" style="max-width:320px;">
+        <div class="modal-title">🔒 Exit Van Board</div>
+        <p style="font-size:0.8rem;color:#aaa;margin-bottom:12px;">Enter the van exit password to return to the home screen.</p>
+        <input type="password" id="vanExitPassInput" placeholder="Van exit password" maxlength="50" style="margin-bottom:12px;" onkeydown="if(event.key==='Enter')submitVanExit()">
+        <div class="btn-grid-2">
+            <button class="btn-gray" onclick="document.getElementById('vanExitModal').style.display='none'">CANCEL</button>
+            <button class="btn-red" onclick="submitVanExit()">EXIT</button>
+        </div>
+    </div>
+</div>
+
+<input type="file" id="logoInput" style="display:none" accept="image/*" onchange="handleLogoFile(this)">
+
+<script>
+// ── TOAST NOTIFICATION ───────────────────────────────────────────────────────
+let _toastTimer=null;
+let _midnightScheduled=false;
+function toast(msg, duration=2200) {
+    const el=document.getElementById('toast');
+    if(!el) return;
+    el.innerText=msg;
+    el.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer=setTimeout(()=>el.classList.remove('show'), duration);
+}
+
+// ── FIREBASE ──────────────────────────────────────────────────────────────────
+const firebaseConfig = { apiKey:"AIzaSyDSC6LXcxQyBq0Yl42nRMH2GUuOInYL7TU", databaseURL:"https://torq-cymru-default-rtdb.europe-west1.firebasedatabase.app/", projectId:"torq-cymru" };
+let db = null;
+function initFirebase() {
+    try {
+        if(!db) {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+        }
+    } catch(e) { console.error('Firebase init error:', e); }
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let isMaster=false, selectedVan="", cloudJobs={}, mPass="1234", aPass="9999", curDist=0, editId=null, logoB64="";
+let liveRates={srv:55,brk:60,mech:65};
+let liveFees={diag:45,dpf:65,batt1:30,batt2:50};
+let liveSurs={acc:10,ooh:25,em:50,env:5,radius:10,travelRate:1.50};
+let dispatchTargetId=null, payTargetId=null, pendingPayMethod=null;
+let vanPass='0000'; // Van exit password — change in Settings
+let currentBuilderRef=null;   // TCQ number shown on builder, persists through edit
+let masterViewFilter='ALL';   // Which van board master is currently viewing
+const BASE_PCODE = 'CF831JD'; // Caerphilly Castle — first job origin
+let lastCompletedPcode = null; // Updated each time a job is marked paid
+const QUOTE_EXPIRY_DAYS=30;
+
+const stdJobs=[{id:"bs",n:"Basic Service",h:0.83,r:55},{id:"fs",n:"Full Service",h:1.25,r:55},{id:"pf",n:"Front Pads",h:0.9,r:60},{id:"pr",n:"Rear Pads",h:1.0,r:60},{id:"pa",n:"Pads (All Round)",h:1.8,r:60},{id:"df",n:"Front Pads & Discs",h:1.3,r:60},{id:"dr",n:"Rear Pads & Discs",h:1.4,r:60},{id:"da",n:"Pads & Discs (All Round)",h:2.5,r:60},{id:"sm",n:"Starter Motor",h:2.2,r:65},{id:"alt",n:"Alternator",h:2.5,r:65},{id:"bt1",n:"Battery (Std)",f:30},{id:"bt2",n:"Battery (S/S)",f:50},{id:"dia",n:"Diagnostics",f:45},{id:"dpf",n:"DPF Regen",f:65}];
+
+// ── ID HELPERS ────────────────────────────────────────────────────────────────
+function displayId(j) {
+    const num = j.jobNum || j.id.replace(/^TC-?Q?-?/,'');
+    return j.status === 'QUOTE' ? `TCQ-${num}` : `TC-${num}`;
+}
+function genUniqueJobNum() {
+    // Collect all existing job numbers to guarantee no duplicates
+    const used = new Set(Object.values(cloudJobs).map(j => j && (j.jobNum || j.id.replace(/^TC-?Q?-?/,''))).filter(Boolean));
+    let num;
+    do { num = String(Math.floor(10000 + Math.random() * 90000)); } while(used.has(num));
+    return num;
+}
+function refreshBuilderRef() {
+    if(!currentBuilderRef) currentBuilderRef = genUniqueJobNum();
+    const el = document.getElementById('builderRef');
+    if(el) el.innerText = 'REF: TCQ-' + currentBuilderRef;
+}
+
+// ── MIDNIGHT AUTO-RETURN ──────────────────────────────────────────────────────
+function runMidnightCleanup() {
+    const todayStr = new Date().toISOString().split('T')[0];
+    // Reset ETA origin — new day starts from Caerphilly Castle again
+    lastCompletedPcode = null;
+    // Return van users to startup screen at midnight for fresh day selection
+    if(!isMaster && selectedVan) {
+        // Clear localStorage so they get startup screen tomorrow morning
+        try { localStorage.removeItem('tc_van'); localStorage.removeItem('tc_master'); } catch(e){}
+        toast('🌙 New day — please sign in again', 4000);
+        setTimeout(returnToStartup, 3000);
+        return;
+    }
+    Object.keys(cloudJobs).forEach(id => {
+        const j = cloudJobs[id]; if(!j) return;
+        if(j.status==='DISPATCHED' && j.schedDate && j.schedDate < todayStr)
+            db.ref('jobs/'+id).update({status:'ACCEPTED',dept:null});
+        if(j.status==='PAID' && j.paidAt) {
+            const pd = new Date(j.paidAt).toISOString().split('T')[0];
+            if(pd < todayStr && j.dept) db.ref('jobs/'+id).update({dept:null});
+        }
+    });
+}
+function scheduleMidnightCleanup() {
+    if(_midnightScheduled) return; // only ever schedule once
+    _midnightScheduled=true;
+    const now=new Date(), midnight=new Date(now);
+    midnight.setHours(24,0,5,0);
+    setTimeout(()=>{ runMidnightCleanup(); setInterval(runMidnightCleanup,86400000); }, midnight-now);
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function isQuoteExpired(j) {
+    if(j.status!=='QUOTE') return false;
+    return (Date.now()-j.ts)/(86400000) > QUOTE_EXPIRY_DAYS;
+}
+function isRepeatCustomer(j) {
+    const reg=(j.reg||'').toUpperCase(), phone=(j.phone||'').replace(/\s/g,'');
+    const confirmedStatuses=['ACCEPTED','PARTS','DISPATCHED','PAID'];
+    return Object.values(cloudJobs).some(o =>
+        o && o.id!==j.id &&
+        confirmedStatuses.includes(o.status) &&
+        ((reg && (o.reg||'').toUpperCase()===reg)||(phone && (o.phone||'').replace(/\s/g,'')===phone))
+    );
+}
+
+// ── CONFIRM ACTION HELPER ────────────────────────────────────────────────────
+let _confirmCb=null;
+function confirmAction(title, msg, btnLabel, btnClass, cb) {
+    _confirmCb=cb;
+    document.getElementById('confirmActionTitle').innerText=title;
+    document.getElementById('confirmActionMsg').innerText=msg;
+    const btn=document.getElementById('confirmActionBtn');
+    btn.innerText=btnLabel; btn.className=btnClass;
+    document.getElementById('confirmActionModal').style.display='flex';
+}
+function runConfirmedAction(){
+    document.getElementById('confirmActionModal').style.display='none';
+    if(_confirmCb){ _confirmCb(); _confirmCb=null; }
+}
+
+// ── APP INIT ──────────────────────────────────────────────────────────────────
+function returnToStartup() {
+    // Detach Firebase listeners
+    if(db){ db.ref("jobs").off(); db.ref("settings").off(); }
+    // Reset state
+    // Close any open modals first
+    ['checklistModal','payModal','vanNoteModal','vanExitModal','confirmDeleteModal',
+     'depositModal','refundModal','purgeModal','purgeConfirmModal','cogModal','calModal',
+     'dispatchModal','logModal','confirmActionModal'].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.style.display='none';
+    });
+    isMaster=false; selectedVan=""; cloudJobs={}; editId=null; masterViewFilter='ALL';
+    try { localStorage.removeItem('tc_van'); localStorage.removeItem('tc_master'); } catch(e){}
+    lastCompletedPcode=null; currentBuilderRef=null; _midnightScheduled=false;
+    document.getElementById('appBody').classList.remove('is-master');
+    // Reset UI
+    document.getElementById('main-ui').style.display='none';
+    document.getElementById('appHeader').style.display='none';
+    document.getElementById('startup-screen').style.display='flex';
+    document.getElementById('vanExitBtn').style.display='none';
+    const vlc=document.getElementById('vanLabel'); if(vlc){ vlc.innerText=''; vlc.style.display='none'; }
+    // Clear search boxes and dropdowns
+    const bs=document.getElementById('boardSearch'), hs=document.getElementById('historySearch');
+    if(bs) bs.value=''; if(hs) hs.value='';
+    const ab=document.getElementById('active-board'), hb=document.getElementById('history-board');
+    if(ab) ab.innerHTML=''; if(hb) hb.innerHTML='';
+    const vfs=document.getElementById('vanFilterSelect'); if(vfs) vfs.value='ALL';
+    resetBuilderUI();
+}
+
+function openVanExit() {
+    document.getElementById('vanExitPassInput').value='';
+    document.getElementById('vanExitModal').style.display='flex';
+    setTimeout(()=>document.getElementById('vanExitPassInput').focus(),100);
+}
+
+function submitVanExit() {
+    const p=document.getElementById('vanExitPassInput').value;
+    document.getElementById('vanExitModal').style.display='none';
+    if(p===vanPass) returnToStartup();
+    else if(p) toast('❌ Incorrect exit password');
+}
+
+
+function initMasterLogin() {
+    const inp=document.getElementById('masterPassInput');
+    if(inp) inp.value='';
+    document.getElementById('masterLoginModal').style.display='flex';
+    setTimeout(()=>{ if(inp) inp.focus(); },100);
+}
+function submitMasterLogin() {
+    const p=document.getElementById('masterPassInput').value;
+    document.getElementById('masterLoginModal').style.display='none';
+    if(p===mPass){
+        isMaster=true;
+        document.getElementById('appBody').classList.add('is-master');
+        launchApp('Master Control');
+        // Warn if still using default password
+        if(mPass==='1234') setTimeout(()=>toast('⚠️ Change your master password in Settings!', 4000),1500);
+        if(aPass==='9999') setTimeout(()=>toast('⚠️ Change your archive password in Settings!', 4000),3000);
+        if(vanPass==='0000') setTimeout(()=>toast('⚠️ Change your van exit password in Settings!', 4000),4500);
+    } else if(p) toast('❌ Incorrect password');
+}
+
+function startApp(van) {
+    if(van==='Master Control') { launchApp(van); return; }
+    // Check if checklist already done today
+    const todayStr=new Date().toISOString().split('T')[0];
+    const stored=localStorage.getItem('torq_checklist_'+van);
+    if(stored===todayStr) { launchApp(van); return; }
+    openChecklist(van);
+}
+
+function launchApp(van) {
+    initFirebase();
+    selectedVan=van;
+    // Save to localStorage so session persists through refresh AND app close
+    try { localStorage.setItem('tc_van', van); localStorage.setItem('tc_master', isMaster?'1':'0'); } catch(e){}
+    document.getElementById('startup-screen').style.display='none';
+    document.getElementById('main-ui').style.display='block';
+    document.getElementById('appHeader').style.display='flex';
+    // Detach any existing listeners before attaching — prevents stacking on re-entry
+    db.ref("jobs").off();
+    db.ref("settings").off();
+    // Show loading state immediately while Firebase connects
+    const _loadHtml='<div style="text-align:center;padding:40px 20px;color:#444;"><div style="font-size:1.5rem;margin-bottom:10px;">⏳</div><div style="font-size:0.8rem;color:#555;">Connecting...</div></div>';
+    const boardEl=document.getElementById('active-board'); if(boardEl) boardEl.innerHTML=_loadHtml;
+    const histEl=document.getElementById('history-board'); if(histEl) histEl.innerHTML=_loadHtml;
+
+    db.ref("jobs").on("value", snap=>{
+        cloudJobs=snap.val()||{};
+        // Refresh builder ref once real jobs are loaded to guarantee uniqueness
+        if(isMaster && currentBuilderRef) {
+            const used=new Set(Object.values(cloudJobs).map(j=>j&&(j.jobNum||j.id.replace(/^TC-?Q?-?/,''))).filter(Boolean));
+            if(used.has(currentBuilderRef)) { currentBuilderRef=genUniqueJobNum(); refreshBuilderRef(); }
+        }
+        render();
+    });
+    db.ref("settings").on("value", snap=>{
+        const s=snap.val()||{};
+        mPass=s.mPass||"1234"; aPass=s.aPass||"9999"; vanPass=s.vanPass||"0000";
+        if(s.logo){ logoB64=s.logo; document.getElementById('appLogo').src=logoB64; document.getElementById('appLogo').style.display='block'; }
+        if(s.liveRates) liveRates=s.liveRates;
+        if(s.liveFees) liveFees=s.liveFees;
+        if(s.liveSurs) liveSurs=s.liveSurs;
+        syncCogUI();
+    });
+    if(!isMaster) switchTab('active'); else switchTab('build');
+    // Show exit button for van users only
+    const exitBtn=document.getElementById('vanExitBtn');
+    if(exitBtn) exitBtn.style.display=isMaster?'none':'block';
+    const vl=document.getElementById('vanLabel');
+    if(vl){ vl.innerText=isMaster?'':van; vl.style.display=isMaster?'none':'block'; }
+    scheduleMidnightCleanup();
+}
+
+// ── START OF DAY CHECKLIST ────────────────────────────────────────────────────
+// ── PER-VAN CHECKLIST CONFIG ─────────────────────────────────────────────────
+// Van & Safety checks are the same for all vans (vehicle condition + legal)
+const SAFETY_COMMON = [
+    "Tyres checked — no damage or low pressure",
+    "All lights working (front, rear, hazards)",
+    "Windscreen & mirrors clean and clear",
+    "Engine oil level checked (vehicle)",
+    "Screen wash level sufficient",
+    "Fuel level sufficient",
+    "First aid kit stocked and accessible",
+    "Fire extinguisher present and in date",
+    "Tools secured — nothing loose in van",
+    "Van interior clean and safe"
+];
+
+// Inventory is tailored per van
+const INVENTORY_CONFIG = {
+    "Mechanic 1": [
+        "PPE stocked — gloves, hi-vis, eye protection",
+        "Jump leads / battery booster present",
+        "Diagnostic tool operational (battery/charge ok)",
+        "Consumables stocked — brake cleaner, WD40, etc.",
+        "Spill & surface protection present — tarp, absorbent pads, rags",
+        "Customer vehicle protection available — seat covers, steering & engine bay covers"
+    ],
+    "Mechanic 2": [
+        "PPE stocked — gloves, hi-vis, eye protection",
+        "Jump leads / battery booster present",
+        "Diagnostic tool operational (battery/charge ok)",
+        "Consumables stocked — brake cleaner, WD40, etc.",
+        "Spill & surface protection present — tarp, absorbent pads, rags",
+        "Customer vehicle protection available — seat covers, steering & engine bay covers"
+    ],
+    // ── Add tailored inventory for these vans when ready ──────────────────────
+    "Tyres": [
+        "⚠️ Tailored Tyres inventory checklist — to be configured"
+    ],
+    "Locksmith": [
+        "⚠️ Tailored Locksmith inventory checklist — to be configured"
+    ],
+    "Recovery": [
+        "⚠️ Tailored Recovery inventory checklist — to be configured"
+    ]
+};
+
+// Resolved at runtime based on selected van
+let SAFETY_ITEMS = SAFETY_COMMON;
+let INVENTORY_ITEMS = [];
+
+let clSigCtx=null, pendingVan='';
+
+function clItemHTML(prefix, i, item) {
+    return `<div class="cl-item" id="clRow-${prefix}${i}">
+        <div class="cl-item-row">
+            <span class="cl-item-label">${item}</span>
+            <button class="cl-btn cl-btn-yes" id="clY-${prefix}${i}" onclick="clAnswer('${prefix}${i}','yes')">✓ YES</button>
+            <button class="cl-btn cl-btn-no"  id="clN-${prefix}${i}" onclick="clAnswer('${prefix}${i}','no')">✗ NO</button>
+        </div>
+        <div class="cl-reason">
+            <input type="text" id="clReason-${prefix}${i}" placeholder="Please explain why..." onclick="event.stopPropagation()">
+        </div>
+    </div>`;
+}
+
+function openChecklist(van) {
+    pendingVan=van;
+    // Resolve correct checklist for this van
+    SAFETY_ITEMS = SAFETY_COMMON;
+    INVENTORY_ITEMS = INVENTORY_CONFIG[van] || ["⚠️ Inventory checklist not yet configured for this van"];
+    document.getElementById('checklistVanLabel').innerText=van+' — '+new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+    const sd=document.getElementById('checklistSafety');
+    const id=document.getElementById('checklistInventory');
+    sd.innerHTML=''; id.innerHTML='';
+    SAFETY_ITEMS.forEach((item,i)=>{ sd.innerHTML+=clItemHTML('s',i,item); });
+    INVENTORY_ITEMS.forEach((item,i)=>{ id.innerHTML+=clItemHTML('v',i,item); });
+    document.getElementById('checklistError').style.display='none';
+    document.getElementById('checklistModal').style.display='flex';
+    // Init canvas after modal visible
+    setTimeout(()=>{
+        const canvas=document.getElementById('checklistSigCanvas');
+        canvas.width=canvas.offsetWidth||340; canvas.height=140;
+        clSigCtx=canvas.getContext('2d');
+        clSigCtx.strokeStyle='#00B140'; clSigCtx.lineWidth=2.5; clSigCtx.lineCap='round';
+        clSigCtx.clearRect(0,0,canvas.width,canvas.height);
+        // Normal portrait canvas — use standard coords
+        let clDrawing=false;
+        function clGetPos(e){ const r=canvas.getBoundingClientRect(); const src=e.touches?e.touches[0]:e; return{x:src.clientX-r.left,y:src.clientY-r.top}; }
+        canvas.onmousedown=canvas.ontouchstart=(e)=>{ e.preventDefault(); clDrawing=true; const p=clGetPos(e); clSigCtx.beginPath(); clSigCtx.moveTo(p.x,p.y); };
+        canvas.onmousemove=canvas.ontouchmove=(e)=>{ e.preventDefault(); if(!clDrawing) return; const p=clGetPos(e); clSigCtx.lineTo(p.x,p.y); clSigCtx.stroke(); };
+        canvas.onmouseup=canvas.ontouchend=()=>{ clDrawing=false; };
+    },100);
+}
+
+function clAnswer(id, answer) {
+    const row=document.getElementById('clRow-'+id);
+    const yBtn=document.getElementById('clY-'+id);
+    const nBtn=document.getElementById('clN-'+id);
+    row.classList.remove('answered-yes','answered-no');
+    yBtn.classList.remove('active'); nBtn.classList.remove('active');
+    if(answer==='yes'){
+        row.classList.add('answered-yes');
+        yBtn.classList.add('active');
+    } else {
+        row.classList.add('answered-no');
+        nBtn.classList.add('active');
+        setTimeout(()=>{ const r=document.getElementById('clReason-'+id); if(r) r.focus(); },50);
+    }
+    // Hide error message once user starts correcting items
+    const errEl=document.getElementById('checklistError');
+    if(errEl) errEl.style.display='none';
+}
+function clearChecklistSig() { if(clSigCtx){ const c=document.getElementById('checklistSigCanvas'); clSigCtx.clearRect(0,0,c.width,c.height); } }
+
+function confirmChecklist() {
+    // Build answer map: id -> {answer:'yes'/'no', reason:string}
+    const allIds=[...SAFETY_ITEMS.map((_,i)=>'s'+i),...INVENTORY_ITEMS.map((_,i)=>'v'+i)];
+    let allAnswered=true;
+    const answers={};
+    allIds.forEach(id=>{
+        const row=document.getElementById('clRow-'+id);
+        if(!row){ allAnswered=false; return; }
+        const isYes=row.classList.contains('answered-yes');
+        const isNo=row.classList.contains('answered-no');
+        if(!isYes&&!isNo){ allAnswered=false; return; }
+        const reason=isNo?(document.getElementById('clReason-'+id)||{}).value||'':'';
+        // If No, reason must be filled
+        if(isNo&&!reason.trim()){ allAnswered=false; return; }
+        answers[id]={answer:isNo?'no':'yes',reason};
+    });
+    const canvas=document.getElementById('checklistSigCanvas');
+    const blank=document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
+    const isSigned=canvas.toDataURL()!==blank.toDataURL();
+    if(!allAnswered||!isSigned){ document.getElementById('checklistError').style.display='block'; return; }
+
+    // Generate checklist PDF
+    try {
+        const{jsPDF}=window.jspdf; const doc=new jsPDF();
+        const now=new Date();
+        const dateLabel=now.toLocaleDateString('en-GB');
+        const dateFile=dateLabel.replace(/\//g,'-');
+        const vanSlug=pendingVan.toLowerCase().replace(/\s+/g,'');
+
+        // Header
+        doc.setFontSize(20); doc.setTextColor(200,16,46); doc.text("TORQ CYMRU",105,20,{align:"center"});
+        doc.setFontSize(11); doc.setTextColor(80); doc.text("START OF DAY CHECKLIST",105,28,{align:"center"});
+        doc.setFontSize(10); doc.setTextColor(0); doc.text("Van: "+pendingVan,20,38); doc.text("Date: "+dateLabel,140,38);
+        doc.setDrawColor(180); doc.line(20,42,190,42);
+
+        function drawSection(title, items, prefix, startY) {
+            let y=startY;
+            doc.setFontSize(10); doc.setTextColor(200,16,46); doc.text(title,20,y); y+=8;
+            doc.setFontSize(9);
+            items.forEach((item,i)=>{
+                const ans=answers[prefix+i];
+                const isNo=ans&&ans.answer==='no';
+                if(isNo){ doc.setTextColor(180,0,0); doc.text("✗  "+item,25,y); y+=7;
+                    doc.setTextColor(100); doc.text("   Reason: "+(ans.reason||'—'),28,y); y+=7;
+                } else { doc.setTextColor(0); doc.text("✓  "+item,25,y); y+=7; }
+                if(y>270){ doc.addPage(); y=20; }
+            });
+            return y;
+        }
+
+        let y=52;
+        y=drawSection("VAN & SAFETY",SAFETY_ITEMS,'s',y);
+        y+=4;
+        y=drawSection("INVENTORY & STOCK",INVENTORY_ITEMS,'v',y);
+
+        // Signature
+        y+=8; if(y>240){doc.addPage();y=20;}
+        doc.setDrawColor(180); doc.line(20,y,190,y); y+=10;
+        doc.setFontSize(10); doc.setTextColor(0); doc.text("Signed off by:",20,y); y+=8;
+        try { doc.addImage(canvas.toDataURL('image/png'),'PNG',20,y,80,28); } catch(e){}
+        y+=32; doc.setFontSize(8); doc.setTextColor(120); doc.text("Completed: "+now.toLocaleTimeString('en-GB')+" on "+dateLabel,20,y);
+
+        doc.save(vanSlug+"_dailychecks_"+dateFile+".pdf");
+    } catch(e){ console.error('PDF error',e); }
+
+    // Save today's date so checklist won't show again today
+    const todayStr=new Date().toISOString().split('T')[0];
+    localStorage.setItem('torq_checklist_'+pendingVan, todayStr);
+    document.getElementById('checklistModal').style.display='none';
+
+    // Open email after PDF downloads
+    setTimeout(()=>{
+        const now2=new Date();
+        const dateFile2=now2.toLocaleDateString('en-GB').replace(/\//g,'-');
+        const vanSlug2=pendingVan.toLowerCase().replace(/\s+/g,'');
+        const sub=encodeURIComponent(`Daily Checks — ${pendingVan} — ${now2.toLocaleDateString('en-GB')}`);
+        const body=encodeURIComponent(`Please find attached the completed start of day checklist for ${pendingVan}.
+
+File: ${vanSlug2}_dailychecks_${dateFile2}.pdf
+
+TORQ CYMRU`);
+        window.open(`mailto:?subject=${sub}&body=${body}`);
+    }, 2750);
+
+    launchApp(pendingVan);
+}
+
+// ── SHARED CANVAS HELPER ──────────────────────────────────────────────────────
+// Handles rotated canvas coordinate mapping
+function initSigCanvas(canvas, ctx) {
+    function getPos(e) {
+        const r=canvas.getBoundingClientRect();
+        const src=e.touches?e.touches[0]:e;
+        const rx=src.clientX-r.left;
+        const ry=src.clientY-r.top;
+        // Canvas element is CSS-rotated 90deg clockwise inside paySignInner
+        // r is the visual bounding rect (appears landscape on screen)
+        // Map visual touch coords back to canvas internal coords:
+        const x = ry * (canvas.width / r.height);
+        const y = (r.width - rx) * (canvas.height / r.width);
+        return {x:x, y:y};
+    }
+    let drawing=false;
+    canvas.onmousedown=canvas.ontouchstart=(e)=>{ e.preventDefault(); drawing=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); };
+    canvas.onmousemove=canvas.ontouchmove=(e)=>{ e.preventDefault(); if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); };
+    canvas.onmouseup=canvas.ontouchend=(e)=>{ drawing=false; };
+}
+
+// ── PAYMENT + SIGNATURE ───────────────────────────────────────────────────────
+let sigCtx=null;
+
+function openPayModal(id) {
+    payTargetId=id; pendingPayMethod=null;
+    document.getElementById('payMethodStep').style.display='block';
+    document.getElementById('paySignStep').style.display='none';
+    document.getElementById('payModalTitle').innerText='Mark as Paid — Select Method';
+    document.getElementById('payModal').style.display='flex';
+}
+function closePayModal() {
+    payTargetId=null; pendingPayMethod=null;
+    document.getElementById('payModal').style.display='none';
+}
+function selectPayMethod(method) {
+    pendingPayMethod=method;
+    document.getElementById('payMethodStep').style.display='none';
+    document.getElementById('paySignStep').style.display='block';
+    document.getElementById('payModalTitle').innerText='Customer Signature';
+    setTimeout(()=>{
+        const canvas=document.getElementById('sigCanvas');
+        canvas.width=500; canvas.height=260;
+        sigCtx=canvas.getContext('2d');
+        sigCtx.strokeStyle='#00B140'; sigCtx.lineWidth=2.5; sigCtx.lineCap='round';
+        sigCtx.clearRect(0,0,canvas.width,canvas.height);
+        initSigCanvas(canvas,sigCtx);
+    },80);
+}
+function clearSig() { if(sigCtx){ const c=document.getElementById('sigCanvas'); sigCtx.clearRect(0,0,c.width,c.height); } }
+
+function confirmPaymentWithSig() {
+    if(!payTargetId) return;
+    // Guard against double-tap — check job isn't already paid
+    if(cloudJobs[payTargetId] && cloudJobs[payTargetId].status==='PAID'){
+        toast('⚠️ This job is already marked as paid'); closePayModal(); return;
+    }
+    // Check canvas has something drawn on it
+    const src=document.getElementById('sigCanvas');
+    const blankCheck=document.createElement('canvas'); blankCheck.width=src.width; blankCheck.height=src.height;
+    if(src.toDataURL()===blankCheck.toDataURL()){ toast('✍️ Please ask the customer to sign first'); return; }
+    // Rotate canvas data back to normal orientation for storage
+    const out=document.createElement('canvas');
+    out.width=src.height; out.height=src.width;
+    const ctx=out.getContext('2d');
+    ctx.translate(out.width/2,out.height/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.drawImage(src,-src.width/2,-src.height/2);
+    const sigData=out.toDataURL('image/png');
+    db.ref('jobs/'+payTargetId).update({status:'PAID',payMethod:pendingPayMethod,paidAt:Date.now(),signature:sigData});
+    // Remember this job's postcode as the next ETA origin
+    if(cloudJobs[payTargetId] && cloudJobs[payTargetId].pcode) {
+        lastCompletedPcode = cloudJobs[payTargetId].pcode.replace(/\s/g,'').toUpperCase();
+    }
+    closePayModal();
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render() {
+    const b=document.getElementById('active-board'), h=document.getElementById('history-board');
+    if(!b||!h) return;
+    const bQ=document.getElementById('boardSearch').value.toUpperCase();
+    const hQ=document.getElementById('historySearch').value.toUpperCase();
+    b.innerHTML=""; h.innerHTML="";
+    let totalRev=0, jobCount=0, activeCount=0;
+    const todayStr=new Date().toISOString().split('T')[0];
+
+    Object.keys(cloudJobs).sort((x,y)=>cloudJobs[y].ts-cloudJobs[x].ts).forEach(id=>{
+        const j=cloudJobs[id]; if(!j) return;
+        const sStr=`${j.reg} ${j.name} ${displayId(j)} ${j.phone||''}`.toUpperCase();
+
+        if(j.status==='PAID') {
+            totalRev+=(j.total||0); jobCount++;
+            if(isMaster && sStr.includes(hQ)) h.innerHTML+=buildCard(j,id);
+            // When master is viewing a specific van, show that van's paid jobs from today only (mirrors van view)
+            if(isMaster && masterViewFilter!=='ALL' && j.dept===masterViewFilter) {
+                const pd=j.paidAt?new Date(j.paidAt).toISOString().split('T')[0]:"";
+                if(pd===todayStr && sStr.includes(bQ)){ b.innerHTML+=buildCard(j,id); activeCount++; }
+            }
+            if(!isMaster && j.dept===selectedVan) {
+                const pd=j.paidAt?new Date(j.paidAt).toISOString().split('T')[0]:"";
+                if(pd===todayStr && sStr.includes(bQ)) b.innerHTML+=buildCard(j,id);
+            }
+        } else {
+            if(isMaster) {
+                if(masterViewFilter==='ALL') {
+                    // Normal master view — all jobs
+                    if(sStr.includes(bQ)){ b.innerHTML+=buildCard(j,id); activeCount++; }
+                } else {
+                    // Van view — exactly what that van sees: DISPATCHED to them today only
+                    if(j.status!=='DISPATCHED' || j.dept!==masterViewFilter) return;
+                    if(j.schedDate && j.schedDate > todayStr) return; // no future jobs
+                    if(sStr.includes(bQ)){ b.innerHTML+=buildCard(j,id); activeCount++; }
+                }
+            } else {
+                if(j.status!=='DISPATCHED'||j.dept!==selectedVan) return;
+                if(sStr.includes(bQ)){ b.innerHTML+=buildCard(j,id); activeCount++; }
+            }
+        }
+    });
+
+    const badge=document.getElementById('badgeActive');
+    if(activeCount>0){ badge.innerText=activeCount; badge.style.display='inline-block'; } else badge.style.display='none';
+
+    // Empty states
+    if(!b.innerHTML){
+        const isSearching=bQ.length>0;
+        let emptyMsg='Jobs dispatched to you will appear here';
+        if(isSearching) emptyMsg='No results for "'+bQ.toLowerCase()+'"';
+        else if(isMaster && masterViewFilter==='ALL') emptyMsg='Use the Builder to create a new quote';
+        else if(isMaster && masterViewFilter!=='ALL') emptyMsg='No jobs dispatched to '+masterViewFilter+' today';
+        const emptyIcon=isSearching?'🔍':'📋';
+        b.innerHTML='<div style="text-align:center;padding:40px 20px;color:#444;"><div style="font-size:2rem;margin-bottom:10px;">'+emptyIcon+'</div><div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;">'+(isSearching?'No results':'No jobs here')+'</div><div style="font-size:0.7rem;margin-top:6px;color:#333;">'+emptyMsg+'</div></div>';
+    }
+    if(!h.innerHTML && isMaster){
+        const histSearching=hQ.length>0;
+        h.innerHTML='<div style="text-align:center;padding:40px 20px;color:#444;"><div style="font-size:2rem;margin-bottom:10px;">'+(histSearching?'🔍':'🏆')+'</div><div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;">'+(histSearching?'No results':'No completed jobs yet')+'</div><div style="font-size:0.7rem;margin-top:6px;color:#333;">'+(histSearching?'No history matches "'+hQ.toLowerCase()+'"':'Completed jobs will appear here')+'</div></div>';
+    }
+
+    // Live-refresh log if it's currently open
+    const logModal=document.getElementById('logModal');
+    if(logModal && logModal.style.display==='flex'){
+        const activeTab=document.querySelector('.log-tab-active');
+        if(activeTab) switchLog(activeTab.id.replace('logTab-',''));
+    }
+
+    if(isMaster) document.getElementById('historyMasterStats').innerHTML=`<div class="stats-header"><div class="stat-box"><span>Total Revenue</span><strong>£${totalRev.toFixed(2)}</strong></div><div class="stat-box"><span>Total Jobs</span><strong>${jobCount}</strong></div></div>`;
+}
+
+// ── BUILD CARD ──────────────────────────────────────────────────────────────
+function bcToggle(el){ el.classList.toggle('is-open'); }
+function bcBtn(el){
+    event.stopPropagation();
+    var id=el.getAttribute('data-id');
+    var fn=el.getAttribute('data-fn');
+    var addr=el.getAttribute('data-addr');
+    var pcode=el.getAttribute('data-pc');
+    var phone=el.getAttribute('data-phone');
+    if(fn==='acceptWithDate') acceptWithDate(id);
+    else if(fn==='editJob') editJob(id);
+    else if(fn==='undoAccept') confirmAction('Undo Accept','Move back to Quote?','UNDO','btn-gray',function(){updateStatus(id,'QUOTE');});
+    else if(fn==='takeDeposit') takeDeposit(id);
+    else if(fn==='awaitParts') updateStatus(id,'PARTS');
+    else if(fn==='dispatch') openDispatchModal(id);
+    else if(fn==='reschedule') acceptWithDate(id);
+    else if(fn==='partsArrived') updateStatus(id,'ACCEPTED');
+    else if(fn==='savePN') savePartsNote(id);
+    else if(fn==='deleteJob') deleteJob(id);
+    else if(fn==='undoDisp') confirmAction('Undo Dispatch','Return to Accepted?','UNDO','btn-gray',function(){updateStatus(id,'ACCEPTED');});
+    else if(fn==='reassign') openDispatchModal(id);
+    else if(fn==='invoice') finalInvoiceFlow(id);
+    else if(fn==='refund') issueRefund(id);
+    else if(fn==='undoPaid') confirmAction('Undo Payment','Remove payment record?','UNDO PAID','btn-gray',function(){undoPaid(id);});
+    else if(fn==='nav') openMap(decodeURIComponent(addr),decodeURIComponent(pcode));
+    else if(fn==='eta') sendETA(id);
+    else if(fn==='note') vanAddNote(id);
+    else if(fn==='pay') openPayModal(id);
+    else if(fn==='call') window.open('tel:'+phone);
+    else if(fn==='del') deleteJob(id);
+}
+function mkBtn(cls,label,fn,id){
+    return '<button class="'+cls+'" data-id="'+id+'" data-fn="'+fn+'" onclick="event.stopPropagation();bcBtn(this)">'+label+'</button>';
+}
+function mkBtnStyle(cls,label,fn,id,style){
+    return '<button class="'+cls+'" style="'+style+'" data-id="'+id+'" data-fn="'+fn+'" onclick="event.stopPropagation();bcBtn(this)">'+label+'</button>';
+}
+
+function buildCard(j,id) {
+    var expired=isQuoteExpired(j);
+    var repeat=isRepeatCustomer(j);
+    var expiredTag=expired?'<span class="expired-tag">EXPIRED</span>':'';
+    var repeatTag=repeat?'<span class="repeat-tag">&#9733; RETURNING</span>':'';
+    var sigIcon=j.signature?' <span style="font-size:0.6rem;color:var(--green);">&#9998; SIGNED</span>':'';
+    var btns='';
+    var masterViewingVan=isMaster&&masterViewFilter!=='ALL';
+
+    if(isMaster&&!masterViewingVan){
+        if(j.status==='QUOTE'){
+            btns=mkBtn('btn-green','ACCEPT','acceptWithDate',id)+mkBtn('btn-gray','EDIT','editJob',id);
+        } else if(j.status==='ACCEPTED'){
+            btns=mkBtn('btn-gray','UNDO ACCEPT','undoAccept',id)
+               +mkBtn('btn-yellow','DEPOSIT','takeDeposit',id)
+               +mkBtn('btn-orange','AWAITING PARTS','awaitParts',id)
+               +mkBtn('btn-blue','DISPATCH','dispatch',id)
+               +mkBtnStyle('btn-gray','RESCHEDULE','reschedule',id,'background:#555');
+        } else if(j.status==='PARTS'){
+            btns=mkBtn('btn-green','PARTS ARRIVED','partsArrived',id)
+               +mkBtn('btn-blue','DISPATCH NOW','dispatch',id)
+               +'<div style="grid-column:1/-1;margin-top:4px;"><textarea id="pn-'+id+'" style="font-size:0.75rem;padding:8px;margin-bottom:4px;" maxlength="400" placeholder="Parts needed..." onclick="event.stopPropagation()">'+(j.partsNote||'')+'</textarea>'
+               +mkBtn('btn-orange','SAVE PARTS NOTE','savePN',id)+'</div>'
+               +mkBtn('btn-red','DELETE','deleteJob',id);
+        } else if(j.status==='DISPATCHED'){
+            btns=mkBtn('btn-gray','UNDO DISP','undoDisp',id)
+               +mkBtn('btn-blue','REASSIGN','reassign',id)
+               +mkBtnStyle('btn-gray','RESCHEDULE','reschedule',id,'background:#555');
+        } else if(j.status==='PAID'){
+            btns=mkBtn('btn-yellow','PDF INVOICE','invoice',id)
+               +mkBtn('btn-red','REFUND','refund',id)
+               +mkBtn('btn-gray','UNDO PAID','undoPaid',id);
+        }
+    } else if(masterViewingVan){
+        if(j.status==='PAID') btns='<div style="color:var(--green);font-weight:bold;text-align:center;padding:10px;">&#10003; COMPLETED ('+(j.payMethod||'PAID')+')</div>';
+    } else {
+        if(j.status==='PAID') btns='<div style="color:var(--green);font-weight:bold;text-align:center;padding:10px;">&#10003; COMPLETED ('+(j.payMethod||'PAID')+')</div>';
+        else{
+            var navBtn='<button class="btn-blue" data-id="'+id+'" data-fn="nav" data-addr="'+encodeURIComponent(j.addr||'')+'" data-pc="'+encodeURIComponent(j.pcode||'')+'" onclick="event.stopPropagation();bcBtn(this)">NAV</button>';
+            btns=navBtn+mkBtn('btn-orange','&#128205; ETA SMS','eta',id)+mkBtn('btn-gray','ADD NOTE','note',id)+mkBtn('btn-green','MARK PAID','pay',id);
+        }
+    }
+
+    var ukDate=j.schedDate?j.schedDate.split('-').reverse().join('/'):'TBC';
+    var discRow=j.discVal?'<div class="breakdown-row" style="color:var(--red)"><span>Discount:</span><span>-&#163;'+j.discVal.toFixed(2)+'</span></div>':'';
+    var depRow=j.deposit?'<div class="breakdown-row" style="color:var(--yellow)"><span>Deposit:</span><span>-&#163;'+j.deposit.toFixed(2)+'</span></div>':'';
+    var refRow=j.refundVal?'<div class="breakdown-row" style="color:var(--red)"><span>REFUNDED:</span><span>-&#163;'+j.refundVal.toFixed(2)+'</span></div>':'';
+    var methodRow=j.payMethod?'<div style="font-size:0.6rem;color:#888;margin-top:5px;">Method: '+j.payMethod.toUpperCase()+sigIcon+'</div>':'';
+    var masterBreakdown='<div style="border-top:1px solid #333;margin-top:10px;padding-top:10px;"><div class="breakdown-row"><span>Labour:</span><span>&#163;'+(j.labourVal||0).toFixed(2)+'</span></div><div class="breakdown-row"><span>Parts:</span><span>&#163;'+(j.partsVal||0).toFixed(2)+'</span></div><div class="breakdown-row"><span>Surcharges:</span><span>&#163;'+(j.surchargeTotal||0).toFixed(2)+'</span></div>'+discRow+depRow+refRow+'<div class="breakdown-row" style="color:var(--green);font-weight:bold;font-size:1rem;border-bottom:none;"><span>TOTAL:</span><span>&#163;'+j.total.toFixed(2)+'</span></div>'+methodRow+'</div>';
+    var deptTag=j.dept?'<span class="van-tag">'+j.dept.toUpperCase()+'</span>':'';
+    var notesLine=j.notes?'<p style="color:var(--yellow);font-size:0.75rem;"><strong>Office:</strong> '+j.notes+'</p>':'';
+    var vanNotesLine=j.vanNotes?'<p style="color:var(--blue);font-size:0.75rem;"><strong>Van:</strong> '+j.vanNotes+'</p>':'';
+    var collectLine=isMaster?masterBreakdown:'<p style="color:var(--green);font-weight:bold;">COLLECT: &#163;'+j.total.toFixed(2)+'</p>';
+    var callBtn=j.status!=='PAID'&&j.phone?'<button class="btn-blue" data-id="'+id+'" data-fn="call" data-phone="'+j.phone+'" onclick="event.stopPropagation();bcBtn(this)">CALL</button>':'';
+    var delBtn=isMaster&&!masterViewingVan&&j.status!=='PAID'&&j.status!=='PARTS'?mkBtn('btn-red','DEL','del',id):'';
+    var itemClass='job-item status-'+j.status+(expired?' expired-quote':'');
+    var h='<div class="'+itemClass+'" onclick="bcToggle(this)">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;"><strong class="upper">'+j.reg+'<span class="status-badge badge-'+j.status+'">'+j.status+'</span>'+expiredTag+repeatTag+'</strong><span style="font-size:0.65rem;color:#aaa;white-space:nowrap;">'+displayId(j)+'</span></div>';
+    h+='<div style="font-size:0.75rem;color:#ccc;margin-top:4px;"><strong>'+j.name+'</strong> | '+(j.make||'Vehicle')+'<span class="date-tag">'+ukDate+'</span>'+deptTag+'</div>';
+    h+='<div style="font-size:0.7rem;color:#888;margin-top:2px;">'+j.addr+' '+j.pcode+'</div>';
+    h+='<div class="details-pane"><p><strong>Work:</strong> '+(j.services||[]).join(', ')+'</p>'+notesLine+vanNotesLine+collectLine;
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:10px;">'+btns+callBtn+delBtn+'</div></div></div>';
+    return h;
+}
+
+// ── DISPATCH ──────────────────────────────────────────────────────────────────
+function openDispatchModal(id){ dispatchTargetId=id; document.getElementById('dispatchModal').style.display='flex'; }
+function closeDispatchModal(){ dispatchTargetId=null; document.getElementById('dispatchModal').style.display='none'; }
+function confirmDispatch(dept){
+    if(dispatchTargetId){
+        db.ref('jobs/'+dispatchTargetId).update({status:'DISPATCHED',dept});
+        toast('🚐 Dispatched to '+dept);
+    }
+    closeDispatchModal();
+}
+
+// ── CALENDAR ──────────────────────────────────────────────────────────────────
+let calTargetId=null, calViewYear=0, calViewMonth=0, calSelectedDate=null;
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAY_LABELS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+function openCalModal(id) {
+    calTargetId=id;
+    const now=new Date(); calViewYear=now.getFullYear(); calViewMonth=now.getMonth();
+    calSelectedDate=(cloudJobs[id]&&cloudJobs[id].schedDate)||null;
+    document.getElementById('calModalTitle').innerText=cloudJobs[id].status==='QUOTE'?'Accept & Set Date':'Reschedule Job';
+    renderCal();
+    document.getElementById('calModal').style.display='flex';
+}
+function closeCalModal(){ calTargetId=null; calSelectedDate=null; document.getElementById('calModal').style.display='none'; }
+function calShift(dir){ calViewMonth+=dir; if(calViewMonth>11){calViewMonth=0;calViewYear++;} if(calViewMonth<0){calViewMonth=11;calViewYear--;} renderCal(); }
+function renderCal() {
+    document.getElementById('calMonthLabel').innerText=`${MONTHS[calViewMonth]} ${calViewYear}`;
+    const grid=document.getElementById('calGrid'); grid.innerHTML='';
+    DAY_LABELS.forEach(d=>{ grid.innerHTML+=`<div class="cal-day-label">${d}</div>`; });
+    const firstDay=new Date(calViewYear,calViewMonth,1);
+    let startOffset=(firstDay.getDay()+6)%7;
+    const dim=new Date(calViewYear,calViewMonth+1,0).getDate();
+    const todayStr=new Date().toISOString().split('T')[0];
+    for(let i=0;i<startOffset;i++) grid.innerHTML+=`<div class="cal-day empty"></div>`;
+    for(let d=1;d<=dim;d++){
+        const m=String(calViewMonth+1).padStart(2,'0'), dd=String(d).padStart(2,'0');
+        const ds=`${calViewYear}-${m}-${dd}`;
+        const isPast=ds<todayStr, isToday=ds===todayStr, isSel=ds===calSelectedDate;
+        let cls='cal-day'; if(isPast) cls+=' past'; if(isToday) cls+=' today'; if(isSel) cls+=' selected';
+        grid.innerHTML+=`<div class="${cls}" ${!isPast?`onclick="calPickDate('${ds}')"`:''}>${d}</div>`;
+    }
+}
+function calPickDate(ds) {
+    if(!calTargetId) return;
+    const j=cloudJobs[calTargetId];
+    const wasQuote=j.status==='QUOTE';
+    db.ref('jobs/'+calTargetId).update({status:wasQuote?'ACCEPTED':j.status,schedDate:ds});
+    const ukDs=ds.split('-').reverse().join('/');
+    toast(wasQuote?'✅ Quote accepted — scheduled '+ukDs:'📅 Rescheduled to '+ukDs);
+    closeCalModal();
+}
+function acceptWithDate(id){ if(!isMaster) return; openCalModal(id); }
+
+// ── LOG ───────────────────────────────────────────────────────────────────────
+function openLog(period) {
+    document.getElementById('logModal').style.display='flex';
+    switchLog(period||'daily');
+}
+function switchLog(period) {
+    ['daily','weekly','monthly','tax'].forEach(p=>{
+        const el=document.getElementById('logTab-'+p);
+        if(el) el.className='log-tab'+(p===period?' log-tab-active':'');
+    });
+    const now=new Date(), todayStr=now.toISOString().split('T')[0];
+    let fromDate, periodLabel, jobsLabel, revenueLabel;
+    if(period==='daily') {
+        fromDate=todayStr;
+        periodLabel=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+        jobsLabel='Jobs Today'; revenueLabel='Revenue Today';
+    } else if(period==='weekly') {
+        const day=(now.getDay()+6)%7;
+        const mon=new Date(now); mon.setDate(now.getDate()-day); mon.setHours(0,0,0,0);
+        fromDate=mon.toISOString().split('T')[0];
+        periodLabel='Week of '+mon.toLocaleDateString('en-GB',{day:'numeric',month:'long'});
+        jobsLabel='Jobs This Week'; revenueLabel='Revenue This Week';
+    } else if(period==='monthly') {
+        const mon=new Date(now.getFullYear(),now.getMonth(),1);
+        fromDate=mon.toISOString().split('T')[0];
+        periodLabel=now.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+        jobsLabel='Jobs This Month'; revenueLabel='Revenue This Month';
+    } else {
+        const taxStart=now.getMonth()>3||(now.getMonth()===3&&now.getDate()>=6)?new Date(now.getFullYear(),3,6):new Date(now.getFullYear()-1,3,6);
+        fromDate=taxStart.toISOString().split('T')[0];
+        const taxEnd=new Date(taxStart.getFullYear()+1,3,5);
+        periodLabel=`Tax Year ${taxStart.getFullYear()}/${String(taxEnd.getFullYear()).slice(2)}`;
+        jobsLabel='Jobs This Tax Year'; revenueLabel='Revenue This Tax Year';
+    }
+    let totalRev=0, totalJobs=0;
+    Object.values(cloudJobs).forEach(j=>{
+        if(j.status!=='PAID'||!j.paidAt) return;
+        const pd=new Date(j.paidAt).toISOString().split('T')[0];
+        if(pd<fromDate||pd>todayStr) return;
+        totalRev+=(j.total||0); totalJobs++;
+    });
+    document.getElementById('logContent').innerHTML=`
+        <p style="color:#888;font-size:0.7rem;margin-bottom:12px;">${periodLabel}</p>
+        <div style="display:flex;justify-content:space-around;text-align:center;margin-bottom:16px;">
+            <div class="stat-box"><span>${jobsLabel}</span><strong>${totalJobs}</strong></div>
+            <div class="stat-box"><span>${revenueLabel}</span><strong>£${totalRev.toFixed(2)}</strong></div>
+        </div>
+        ${totalJobs===0?'<p style="color:#555;font-size:0.75rem;">No jobs in this period yet.</p>':''}
+    `;
+}
+
+// ── ETA SMS ───────────────────────────────────────────────────────────────────
+// Haversine distance between two {lat,lon} points in miles
+function haversineMiles(lat1,lon1,lat2,lon2) {
+    const R=3958.8, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return 2*R*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function sendETA(jobId) {
+    const j=cloudJobs[jobId];
+    if(!j||!j.phone){ toast('⚠️ No phone number on this job'); return; }
+
+    // Origin: last completed job's postcode, or Caerphilly Castle if first job today
+    const originPcode = lastCompletedPcode || BASE_PCODE;
+    const destPcode   = (j.pcode||'').replace(/\s/g,'').toUpperCase();
+    if(!destPcode){ toast('⚠️ No postcode on this job'); return; }
+
+    // Fetch both postcodes in parallel
+    Promise.all([
+        fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(originPcode)).then(r=>r.json()),
+        fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(destPcode)).then(r=>r.json())
+    ]).then(([orig, dest])=>{
+        if(orig.status!==200){ toast('⚠️ Could not locate origin postcode'); return; }
+        if(dest.status!==200){ toast('⚠️ Could not locate destination postcode'); return; }
+        const dist=haversineMiles(orig.result.latitude,orig.result.longitude,dest.result.latitude,dest.result.longitude);
+        const mins=Math.round((dist/25)*60)+5;
+        const eta=new Date(Date.now()+mins*60000);
+        const etaStr=eta.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        const msg='Hi '+j.name+', this is TORQ CYMRU. Your engineer is on the way and should arrive at approximately '+etaStr+' (around '+mins+' mins). Ref: '+displayId(j)+'.';
+        window.open('sms:'+j.phone+'?body='+encodeURIComponent(msg));
+    }).catch(()=>{ toast('⚠️ ETA failed — check connection'); });
+}
+
+// ── WHATSAPP QUOTE ────────────────────────────────────────────────────────────
+function whatsappQuote() {
+    const v=calc();
+    const _waRefNum=currentBuilderRef||(editId&&cloudJobs[editId]?(cloudJobs[editId].jobNum||cloudJobs[editId].id.replace(/^TC-?Q?-?/,'')):null); const refLine=_waRefNum?'Ref: TCQ-'+_waRefNum:'Ref: PENDING';
+    const reg=document.getElementById('mReg').value.toUpperCase()||'N/A';
+    let works=Array.from(document.querySelectorAll('.j-chk:checked')).map(c=>stdJobs.find(x=>x.id===c.value).n);
+    const waCustomDesc=document.getElementById('mCustomJob').value.trim();
+    const waCustomHrs=parseFloat(document.getElementById('mCustomHours').value)||0;
+    if(waCustomDesc&&waCustomHrs>0) works.push(waCustomDesc+' ('+waCustomHrs+'hr'+(waCustomHrs!==1?'s':'')+')');
+    if(!works.length){ toast('⚠️ Please select at least one service before sending'); return; }
+    let msg=`*TORQ CYMRU — QUOTATION*\n${refLine}\nReg: *${reg}*\n\n*Work Required:*\n${works.map(w=>`• ${w}`).join('\n')}\n\nLabour: £${v.labor.toFixed(2)}\n`;
+    if(v.parts>0) msg+=`Parts: £${v.parts.toFixed(2)}\n`;
+    v.activeSurs.forEach(s=>{ msg+=`${s.n}: £${s.v.toFixed(2)}\n`; });
+    if(v.discount>0) msg+=`Discount: -£${v.discount.toFixed(2)}\n`;
+    msg+=`\n*TOTAL: £${Math.max(0,v.total).toFixed(2)}*\n\nValid for 30 days.\nTORQ CYMRU — Professional Mobile Mechanics`;
+    // Normalise phone — strip all non-digits, remove leading 0, 44, or 440
+    let rawPhone=document.getElementById('mPhone').value.replace(/\D/g,'');
+    if(rawPhone.startsWith('440')) rawPhone=rawPhone.slice(3);
+    else if(rawPhone.startsWith('44')) rawPhone=rawPhone.slice(2);
+    else if(rawPhone.startsWith('0')) rawPhone=rawPhone.slice(1);
+    if(!rawPhone){ toast('⚠️ No phone number — add one to send via WhatsApp'); return; }
+    window.open(`https://wa.me/44${rawPhone}?text=${encodeURIComponent(msg)}`);
+}
+
+// ── PARTS NOTE ────────────────────────────────────────────────────────────────
+function savePartsNote(id) {
+    const note=document.getElementById('pn-'+id).value;
+    db.ref('jobs/'+id).update({partsNote:note});
+    toast('✅ Parts note saved');
+}
+
+// ── CORE FUNCTIONS ────────────────────────────────────────────────────────────
+function callJob(el){ window.open('tel:'+el.getAttribute('data-phone')); }
+function openMap(addr,pcode){ window.open(`https://maps.google.com/?q=${encodeURIComponent(addr+' '+pcode)}`); }
+let _vanNoteTargetId=null;
+function vanAddNote(id) {
+    _vanNoteTargetId=id;
+    const inp=document.getElementById('vanNoteInput');
+    if(inp) inp.value='';
+    document.getElementById('vanNoteModal').style.display='flex';
+    setTimeout(()=>{ if(inp) inp.focus(); },100);
+}
+function submitVanNote() {
+    const n=document.getElementById('vanNoteInput').value.trim();
+    document.getElementById('vanNoteModal').style.display='none';
+    if(!n||!_vanNoteTargetId) return;
+    const old=cloudJobs[_vanNoteTargetId]&&cloudJobs[_vanNoteTargetId].vanNotes?cloudJobs[_vanNoteTargetId].vanNotes+' | ':'';
+    db.ref('jobs/'+_vanNoteTargetId).update({vanNotes:old+n});
+    toast('✅ Note added');
+    _vanNoteTargetId=null;
+}
+function undoPaid(id){
+    const j=cloudJobs[id];
+    // Restore total to pre-refund value if a refund was issued, keeping deposit intact
+    const restoredTotal = j.originalRefundBase!=null ? j.originalRefundBase : j.total;
+    db.ref('jobs/'+id).update({
+        status:'DISPATCHED', paidAt:null, payMethod:null, signature:null,
+        // Clear refund only — deposit stays as it was already taken
+        refundVal:null, originalRefundBase:null,
+        total:Math.round(restoredTotal*100)/100
+    });
+    toast('↩️ Job returned to Dispatched');
+}
+let _refundTargetId=null;
+function issueRefund(id){
+    _refundTargetId=id;
+    const j=cloudJobs[id];
+    const inp=document.getElementById('refundAmtInput');
+    const hint=document.getElementById('refundHint');
+    inp.value=j.refundVal||'';
+    if(hint) hint.innerText=j.refundVal?'Current refund: £'+j.refundVal.toFixed(2)+' — enter 0 to remove':'Enter amount (or 0 to remove)';
+    document.getElementById('refundModal').style.display='flex';
+    setTimeout(()=>inp.focus(),100);
+}
+function submitRefund(){
+    const amt=parseFloat(document.getElementById('refundAmtInput').value);
+    document.getElementById('refundModal').style.display='none';
+    if(!_refundTargetId||isNaN(amt)||amt<=0) return;
+    const j=cloudJobs[_refundTargetId];
+    if(!j){ toast('⚠️ Job no longer exists'); _refundTargetId=null; return; }
+    // Always work from originalRefundBase to avoid stacking — mirrors deposit logic
+    const origBase=j.originalRefundBase!=null?j.originalRefundBase:(j.total+(j.refundVal||0));
+    if(amt>0 && amt>origBase){ toast('⚠️ Refund cannot exceed the job value (£'+origBase.toFixed(2)+')'); return; }
+    if(amt<=0){
+        // Zero — remove refund and restore original total
+        db.ref('jobs/'+_refundTargetId).update({refundVal:null,total:Math.round(origBase*100)/100,originalRefundBase:null});
+        toast('✅ Refund removed');
+    } else {
+        db.ref('jobs/'+_refundTargetId).update({refundVal:amt,total:Math.round((origBase-amt)*100)/100,originalRefundBase:Math.round(origBase*100)/100});
+        toast('↩️ Refund of £'+amt.toFixed(2)+' issued');
+    }
+    _refundTargetId=null;
+}
+let _depositTargetId=null;
+function takeDeposit(id){
+    _depositTargetId=id;
+    const j=cloudJobs[id];
+    document.getElementById('depositAmtInput').value=j.deposit||'';
+    document.getElementById('depositHint').innerText=j.deposit?'Current deposit: £'+j.deposit.toFixed(2)+' — enter 0 to remove':'Enter amount (or 0 to remove)';
+    document.getElementById('depositModal').style.display='flex';
+    setTimeout(()=>document.getElementById('depositAmtInput').focus(),100);
+}
+function submitDeposit(){
+    document.getElementById('depositModal').style.display='none';
+    if(!_depositTargetId) return;
+    const d=Math.round(parseFloat(document.getElementById('depositAmtInput').value)*100)/100;
+    if(isNaN(d)) return;
+    const j=cloudJobs[_depositTargetId];
+    if(!j){ toast('⚠️ Job no longer exists'); _depositTargetId=null; return; }
+    const origTotal=j.originalTotal!=null?j.originalTotal:(j.total+(j.deposit||0));
+    if(d<=0){
+        db.ref('jobs/'+_depositTargetId).update({deposit:null,total:Math.round(origTotal*100)/100,originalTotal:null});
+        toast('✅ Deposit removed');
+    } else {
+        db.ref('jobs/'+_depositTargetId).update({deposit:d,total:Math.round((origTotal-d)*100)/100,originalTotal:Math.round(origTotal*100)/100});
+        toast('✅ Deposit of £'+d.toFixed(2)+' applied');
+    }
+    _depositTargetId=null;
+}
+function deleteJob(idOrEl) {
+    var id=typeof idOrEl==='string'?idOrEl:idOrEl.getAttribute('data-id');
+    const j=cloudJobs[id];
+    const msg=document.getElementById('confirmDeleteMsg');
+    if(msg) msg.innerText=(j?`${j.reg} — ${j.name}`:'This job')+' will be permanently removed.';
+    const btn=document.getElementById('confirmDeleteBtn');
+    if(btn){ btn.onclick=()=>{ db.ref('jobs/'+id).remove(); document.getElementById('confirmDeleteModal').style.display='none'; toast('🗑 Job deleted'); }; }
+    document.getElementById('confirmDeleteModal').style.display='flex';
+}
+function updateStatus(id,s){
+    db.ref('jobs/'+id).update({status:s});
+    const labels={'QUOTE':'↩️ Moved to Quote','ACCEPTED':'✅ Accepted','PARTS':'🔧 Awaiting Parts','DISPATCHED':'🚐 Dispatched'};
+    toast(labels[s]||'✅ Status updated');
+}
+function switchTab(t){
+    if(t!=='build') editId=null;
+    // Reset master van filter when entering board tab
+    if(t==='active' && isMaster){
+        masterViewFilter='ALL';
+        const sel=document.getElementById('vanFilterSelect');
+        if(sel) sel.value='ALL';
+    }
+    // Clear search boxes on tab switch to avoid stale results
+    const bs=document.getElementById('boardSearch'), hs=document.getElementById('historySearch');
+    if(bs) bs.value=''; if(hs) hs.value='';
+    const ab=document.getElementById('active-board'), hb=document.getElementById('history-board');
+    if(ab) ab.innerHTML=''; if(hb) hb.innerHTML='';
+    document.querySelectorAll('.view-panel,.tab').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+t).classList.add('active');
+    document.getElementById('tab-'+t).classList.add('active');
+    render();
+}
+function openCog(){ document.getElementById('cogModal').style.display='flex'; syncCogUI(); }
+function closeCog(){ document.getElementById('cogModal').style.display='none'; }
+function purgeArchive(){
+    closeCog();
+    // Show purge modal
+    document.getElementById('purgeModal').style.display='flex';
+    document.getElementById('purgePassInput').value='';
+    setTimeout(()=>document.getElementById('purgePassInput').focus(),100);
+}
+function submitPurge(){
+    const p=document.getElementById('purgePassInput').value;
+    if(p!==aPass){ toast('❌ Incorrect archive password'); return; }
+    document.getElementById('purgeModal').style.display='none';
+    document.getElementById('purgeConfirmModal').style.display='flex';
+}
+function confirmPurge(){
+    db.ref("jobs").remove();
+    document.getElementById('purgeConfirmModal').style.display='none';
+    toast('🗑 All data purged');
+}
+function triggerLogoUpload(){ if(isMaster) document.getElementById('logoInput').click(); }
+function handleLogoFile(input){ const reader=new FileReader(); reader.onload=(e)=>{ const img=new Image(); img.onload=()=>{ const canvas=document.createElement('canvas'); const maxW=300; canvas.width=maxW; canvas.height=img.height*(maxW/img.width); canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height); logoB64=canvas.toDataURL('image/jpeg',0.7); db.ref("settings/logo").set(logoB64); document.getElementById('appLogo').src=logoB64; document.getElementById('appLogo').style.display='block'; }; img.src=e.target.result; }; reader.readAsDataURL(input.files[0]); }
+let _distTimer=null;
+function handleDistance(){
+    clearTimeout(_distTimer);
+    _distTimer=setTimeout(()=>{
+        const pc=document.getElementById('mPcode').value.toUpperCase().replace(/\s/g,'');
+        if(pc.length<5) return;
+        fetch(`https://api.postcodes.io/postcodes/${pc}`).then(r=>r.json()).then(d=>{ if(d.status===200){ const R=3958.8,la1=51.5761,lo1=-3.2173; const dLat=(d.result.latitude-la1)*Math.PI/180; const dLon=(d.result.longitude-lo1)*Math.PI/180; const a=Math.sin(dLat/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(d.result.latitude*Math.PI/180)*Math.sin(dLon/2)**2; curDist=2*R*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); document.getElementById('mTravelInfo').innerText=`Distance: ${curDist.toFixed(1)} mi`; calc(); } }).catch(()=>{});
+    },500);
+}
+
+function syncCogUI(){
+    if(!document.getElementById('rateSrv')) return;
+    document.getElementById('rateSrv').value=liveRates.srv; document.getElementById('rateBrk').value=liveRates.brk; document.getElementById('rateMech').value=liveRates.mech;
+    document.getElementById('feeDiag').value=liveFees.diag; document.getElementById('feeDpf').value=liveFees.dpf; document.getElementById('feeBatt1').value=liveFees.batt1; document.getElementById('feeBatt2').value=liveFees.batt2;
+    document.getElementById('feeAcc').value=liveSurs.acc; document.getElementById('feeOOH').value=liveSurs.ooh; document.getElementById('feeEm').value=liveSurs.em; document.getElementById('feeEnv').value=liveSurs.env;
+    document.getElementById('setRadius').value=liveSurs.radius; document.getElementById('setTravelRate').value=liveSurs.travelRate;
+    if(document.getElementById('setVPass')) document.getElementById('setVPass').value='';
+}
+function saveSettings(){
+    const s={
+        liveRates:{srv:parseFloat(document.getElementById('rateSrv').value),brk:parseFloat(document.getElementById('rateBrk').value),mech:parseFloat(document.getElementById('rateMech').value)},
+        liveFees:{diag:parseFloat(document.getElementById('feeDiag').value),dpf:parseFloat(document.getElementById('feeDpf').value),batt1:parseFloat(document.getElementById('feeBatt1').value),batt2:parseFloat(document.getElementById('feeBatt2').value)},
+        liveSurs:{acc:parseFloat(document.getElementById('feeAcc').value),ooh:parseFloat(document.getElementById('feeOOH').value),em:parseFloat(document.getElementById('feeEm').value),env:parseFloat(document.getElementById('feeEnv').value),radius:parseFloat(document.getElementById('setRadius').value),travelRate:parseFloat(document.getElementById('setTravelRate').value)},
+        mPass:document.getElementById('setMPass').value||mPass,
+        aPass:document.getElementById('setAPass').value||aPass,
+        vanPass:document.getElementById('setVPass').value||vanPass
+    };
+    db.ref("settings").update(s).then(()=>{ toast("✅ Settings saved"); closeCog(); });
+}
+
+function calc(){
+    const u=parseFloat(document.getElementById('mUsage').value),s=parseFloat(document.getElementById('mSize').value),t=parseFloat(document.getElementById('mTier').value);
+    let labor=0,activeSurs=[];
+    document.querySelectorAll('.j-chk:checked').forEach(c=>{
+        const j=stdJobs.find(x=>x.id===c.value);
+        if(j.id==='dia') labor+=liveFees.diag; else if(j.id==='dpf') labor+=liveFees.dpf; else if(j.id==='bt1') labor+=liveFees.batt1; else if(j.id==='bt2') labor+=liveFees.batt2;
+        else{ let r=liveRates.srv; if(j.r===60) r=liveRates.brk; if(j.r===65) r=liveRates.mech; labor+=(j.h*r*s*t); }
+    });
+    labor+=((parseFloat(document.getElementById('mCustomHours').value)||0)*liveRates.mech*s*t);
+    if(curDist>liveSurs.radius) activeSurs.push({n:"Travel Surcharge",v:(curDist-liveSurs.radius)*liveSurs.travelRate});
+    if(document.getElementById('mAcc').checked) activeSurs.push({n:"Access Fee",v:liveSurs.acc});
+    if(document.getElementById('mOOH').checked) activeSurs.push({n:"Out of Hours Fee",v:liveSurs.ooh});
+    if(document.getElementById('mEm').checked) activeSurs.push({n:"Emergency Fee",v:liveSurs.em});
+    if(document.getElementById('mEnv').checked) activeSurs.push({n:"Environmental Disposal Fee",v:liveSurs.env});
+    const st=activeSurs.reduce((a,b)=>a+b.v,0),pts=parseFloat(document.getElementById('mParts').value)||0;
+    const sub=(labor+pts+st)*u,dIn=parseFloat(document.getElementById('mDiscount').value)||0;
+    let dV=document.getElementById('mDiscType').value==='perc'?(sub*(dIn/100)):dIn;
+    dV=Math.round(dV*100)/100; const fin=Math.round((sub-dV)*100)/100;
+    document.getElementById('mDispTotal').innerText="£"+Math.max(0,fin).toFixed(2);
+    return{labor:labor*u,parts:pts*u,surchargeTotal:st*u,activeSurs,sub,discount:dV,total:fin,rawDisc:dIn,dType:document.getElementById('mDiscType').value};
+}
+
+function saveJob(stat){
+    // Validate required fields
+    const custName=document.getElementById('mCust').value.trim();
+    const custReg=document.getElementById('mReg').value.trim();
+    if(!custName){ toast('⚠️ Please enter a customer name'); document.getElementById('mCust').focus(); return; }
+    if(!custReg){ toast('⚠️ Please enter a vehicle registration'); document.getElementById('mReg').focus(); return; }
+    const custPcode=document.getElementById('mPcode').value.trim();
+    const custAddr=document.getElementById('mAddr').value.trim();
+    if(!custPcode){ toast('⚠️ Please enter a postcode'); document.getElementById('mPcode').focus(); return; }
+    if(!custAddr){ toast('⚠️ Please enter a work address'); document.getElementById('mAddr').focus(); return; }
+    const customHrsVal=parseFloat(document.getElementById('mCustomHours').value)||0;
+    const customDescVal=document.getElementById('mCustomJob').value.trim();
+    if(customDescVal && customHrsVal<=0){ toast('⚠️ Please enter hours for the custom job'); document.getElementById('mCustomHours').focus(); return; }
+    const hasWork=document.querySelectorAll('.j-chk:checked').length>0 || customHrsVal>0;
+    if(!hasWork){ toast('⚠️ Please select at least one service'); return; }
+    const v=calc();
+    const jobNum=editId
+        ?(cloudJobs[editId].jobNum||cloudJobs[editId].id.replace(/^TC-?Q?-?/,''))
+        :(currentBuilderRef||genUniqueJobNum());
+    const ref=editId?editId:`TC-${jobNum}`;
+    const svcs=Array.from(document.querySelectorAll('.j-chk:checked')).map(c=>stdJobs.find(x=>x.id===c.value).n);
+    // Include custom job description if hours were entered
+    const customDesc=document.getElementById('mCustomJob').value.trim();
+    const customHrs=parseFloat(document.getElementById('mCustomHours').value)||0;
+    if(customDesc && customHrs>0) svcs.push(customDesc+' ('+customHrs+'hr'+(customHrs!==1?'s':'')+')');
+    else if(customDesc) svcs.push(customDesc);
+    const surs={acc:document.getElementById('mAcc').checked,ooh:document.getElementById('mOOH').checked,em:document.getElementById('mEm').checked,env:document.getElementById('mEnv').checked};
+    const dep=editId?(cloudJobs[editId].deposit||0):0;
+    db.ref("jobs/"+ref).update({id:ref,jobNum,status:editId?cloudJobs[editId].status:stat,name:document.getElementById('mCust').value,phone:document.getElementById('mPhone').value,email:document.getElementById('mEmail').value,reg:document.getElementById('mReg').value.toUpperCase(),make:document.getElementById('mMake').value,pcode:document.getElementById('mPcode').value.toUpperCase(),addr:document.getElementById('mAddr').value,notes:document.getElementById('mOfficeNotes').value,total:v.total-dep,labourVal:v.labor,partsVal:v.parts,surchargeTotal:v.surchargeTotal,activeSurs:v.activeSurs,discVal:v.discount,deposit:dep,services:svcs,ts:editId?cloudJobs[editId].ts:Date.now(),surchargeData:surs,discInput:v.rawDisc,discType:v.dType,schedDate:editId?(cloudJobs[editId].schedDate||""):"",vatVal:document.getElementById('mUsage').value,sizeVal:document.getElementById('mSize').value,tierVal:document.getElementById('mTier').value});
+    toast("✅ Job saved"); if(editId){ resetBuilder(); switchTab('active'); }
+}
+
+function genPDF(type='RECORD'){
+    const{jsPDF}=window.jspdf; const doc=new jsPDF(); const v=calc();
+    const reg=document.getElementById('mReg').value.toUpperCase()||"JOB";
+    const custName=document.getElementById('mCust').value||'';
+    const custEmail=document.getElementById('mEmail').value||'';
+    // Use builder's current ref — works for new quotes AND edits
+    const refNum=currentBuilderRef||(editId?(cloudJobs[editId].jobNum||cloudJobs[editId].id.replace(/^TC-?Q?-?/,'')):genUniqueJobNum());
+    const pdfRef='TCQ-'+refNum;
+    const fileName='quote_'+pdfRef+'_'+reg+'.pdf';
+
+    if(logoB64){try{doc.addImage(logoB64,'JPEG',85,10,40,40);}catch(e){}}
+    doc.setFontSize(22); doc.setTextColor(200,16,46); doc.text("TORQ CYMRU",105,60,{align:"center"});
+    doc.setFontSize(10); doc.setTextColor(100); doc.text("OFFICIAL QUOTATION",105,68,{align:"center"});
+    doc.setDrawColor(0); doc.line(20,75,190,75); doc.setFontSize(12); doc.setTextColor(0);
+    doc.text("CLIENT: "+custName,20,85); doc.text("REG: "+reg,20,92);
+    doc.text("DATE: "+new Date().toLocaleDateString('en-GB'),140,85); doc.text("REF: "+pdfRef,140,92);
+    doc.setFontSize(14); doc.text("WORK DETAILS:",20,115); doc.setFontSize(11); let y=125;
+    document.querySelectorAll('.j-chk:checked').forEach(c=>{
+        if(y>265){doc.addPage();y=20;}
+        doc.text("- "+stdJobs.find(x=>x.id===c.value).n,25,y);y+=7;
+    });
+    const pdfCustomDesc=document.getElementById('mCustomJob').value.trim();
+    const pdfCustomHrs=parseFloat(document.getElementById('mCustomHours').value)||0;
+    if(pdfCustomDesc&&pdfCustomHrs>0){if(y>265){doc.addPage();y=20;}doc.text("- "+pdfCustomDesc+" ("+pdfCustomHrs+"hr"+(pdfCustomHrs!==1?"s":"")+")",25,y);y+=7;}
+    else if(pdfCustomDesc){if(y>265){doc.addPage();y=20;}doc.text("- "+pdfCustomDesc,25,y);y+=7;}
+    y=Math.max(y+10,160); doc.line(20,y,190,y); y+=10;
+    doc.text("Labour Subtotal",20,y); doc.text("£"+v.labor.toFixed(2),170,y,{align:"right"}); y+=7;
+    if(v.parts>0){doc.text("Parts",20,y);doc.text("£"+v.parts.toFixed(2),170,y,{align:"right"});y+=7;}
+    v.activeSurs.forEach(s=>{doc.text(s.n,20,y);doc.text("£"+s.v.toFixed(2),170,y,{align:"right"});y+=7;});
+    if(v.discount>0){doc.setTextColor(200,16,46);doc.text("Discount Applied",20,y);doc.text("-£"+v.discount.toFixed(2),170,y,{align:"right"});y+=7;doc.setTextColor(0);}
+    y+=12; doc.setFontSize(22); doc.setTextColor(0,177,64); doc.text("TOTAL: £"+Math.max(0,v.total).toFixed(2),190,y,{align:"right"});
+    doc.save(fileName);
+
+    // Auto-open email 2.75s after PDF downloads
+    if(custEmail) {
+        setTimeout(()=>{
+            const sub=encodeURIComponent("Quotation "+pdfRef+" — "+reg);
+            const body=encodeURIComponent("Hi "+custName+",\n\nPlease find your quotation attached ("+fileName+").\n\nRef: "+pdfRef+"\n\nKind Regards,\nTORQ CYMRU");
+            window.open("mailto:"+custEmail+"?subject="+sub+"&body="+body);
+        },2750);
+    }
+}
+
+function genHistoryPDF(id){
+    const j=cloudJobs[id]; const{jsPDF}=window.jspdf; const doc=new jsPDF();
+    if(logoB64){try{doc.addImage(logoB64,'JPEG',85,10,40,40);}catch(e){}}
+    doc.setFontSize(22); doc.setTextColor(200,16,46); doc.text("TORQ CYMRU",105,60,{align:"center"});
+    doc.setFontSize(10); doc.setTextColor(100); doc.text("OFFICIAL SERVICE RECORD",105,68,{align:"center"});
+    doc.setDrawColor(0); doc.line(20,75,190,75); doc.setFontSize(12); doc.setTextColor(0);
+    doc.text(`CLIENT: ${j.name||'Unknown'}`,20,85); doc.text(`REG: ${j.reg||'N/A'}`,20,92);
+    doc.text(`DATE: ${new Date(j.paidAt||j.ts).toLocaleDateString('en-GB')}`,140,85); doc.text(`REF: ${displayId(j)}`,140,92);
+    doc.setFontSize(14); doc.text("WORK DETAILS:",20,115); doc.setFontSize(11); let y=125;
+    (j.services||[]).forEach(s=>{doc.text(`- ${s}`,25,y);y+=7;});
+    y=Math.max(y+10,160); doc.line(20,y,190,y); y+=10;
+    doc.text("Labour Total",20,y); doc.text(`£${(j.labourVal||0).toFixed(2)}`,170,y,{align:"right"}); y+=7;
+    if(j.partsVal>0){doc.text("Parts",20,y);doc.text(`£${j.partsVal.toFixed(2)}`,170,y,{align:"right"});y+=7;}
+    if(j.activeSurs) j.activeSurs.forEach(s=>{doc.text(s.n,20,y);doc.text(`£${s.v.toFixed(2)}`,170,y,{align:"right"});y+=7;});
+    if(j.discVal>0){doc.setTextColor(200,16,46);doc.text("Discount",20,y);doc.text(`-£${j.discVal.toFixed(2)}`,170,y,{align:"right"});y+=7;doc.setTextColor(0);}
+    if(j.refundVal>0){doc.setTextColor(200,16,46);doc.text("Refund Issued",20,y);doc.text(`-£${j.refundVal.toFixed(2)}`,170,y,{align:"right"});y+=7;doc.setTextColor(0);}
+    if(j.deposit&&j.deposit>0){
+        const origT=j.originalTotal!=null?j.originalTotal:(j.total+j.deposit);
+        doc.setFontSize(9); doc.setTextColor(0);
+        doc.text("Job Total",20,y); doc.text("£"+origT.toFixed(2),170,y,{align:"right"}); y+=7;
+        doc.setTextColor(200,130,0);
+        doc.text("Deposit Paid",20,y); doc.text("-£"+j.deposit.toFixed(2),170,y,{align:"right"}); y+=7;
+        doc.setTextColor(0);
+    }
+    if(j.refundVal&&j.refundVal>0){
+        doc.setFontSize(9); doc.setTextColor(200,16,46);
+        doc.text("Refund Issued",20,y); doc.text("-£"+j.refundVal.toFixed(2),170,y,{align:"right"}); y+=7;
+        doc.setTextColor(0);
+    }
+    y+=12; doc.setFontSize(22); doc.setTextColor(0,177,64); doc.text(`TOTAL PAID: £${j.total.toFixed(2)}`,190,y,{align:"right"});
+    // Signature already corrected to normal orientation before storage
+    if(j.signature){try{y+=15;doc.setFontSize(10);doc.setTextColor(100);doc.text("Customer Signature:",20,y);y+=5;doc.addImage(j.signature,'PNG',20,y,80,30);}catch(e){}}
+    doc.save('invoice_'+displayId(j)+'_'+j.reg+'.pdf');
+}
+
+function finalInvoiceFlow(id){
+    const j=cloudJobs[id]; genHistoryPDF(id);
+    if(j.email){
+        setTimeout(()=>{
+            const a=document.createElement('a');
+            const invRef=displayId(j); const invFile='invoice_'+invRef+'_'+j.reg+'.pdf'; a.href=`mailto:${j.email}?subject=${encodeURIComponent('Invoice '+invRef+' — '+j.reg)}&body=${encodeURIComponent('Hi '+j.name+',\n\nPlease find your invoice attached ('+invFile+').\n\nRef: '+invRef+'\n\nKind Regards,\nTORQ CYMRU')}`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        },3000);
+    }
+}
+
+function copyQuote(){
+    const v=calc();
+    let ptsLine=v.parts>0?`Parts: £${v.parts.toFixed(2)}\n`:"";
+    let sList=""; v.activeSurs.forEach(s=>sList+=`+ ${s.n}: £${s.v.toFixed(2)}\n`);
+    let discStr=v.discount>0?`DISCOUNT: -£${v.discount.toFixed(2)}\n`:"";
+    const _crNum=currentBuilderRef||(editId&&cloudJobs[editId]?(cloudJobs[editId].jobNum||cloudJobs[editId].id.replace(/^TC-?Q?-?/,'')):null); const refLine=_crNum?('Ref: TCQ-'+_crNum+'\n'):'';
+    const stdWorkList=Array.from(document.querySelectorAll('.j-chk:checked')).map(c=>stdJobs.find(x=>x.id===c.value).n);
+    const copyCustomDesc=document.getElementById('mCustomJob').value.trim();
+    const copyCustomHrs=parseFloat(document.getElementById('mCustomHours').value)||0;
+    if(copyCustomDesc&&copyCustomHrs>0) stdWorkList.push(copyCustomDesc+' ('+copyCustomHrs+'hr'+(copyCustomHrs!==1?'s':'')+')');
+    const t=`TORQ CYMRU\n${refLine}Reg: ${document.getElementById('mReg').value.toUpperCase()}\nWork: ${stdWorkList.join(', ')}\n\nLabour: £${v.labor.toFixed(2)}\n${ptsLine}${sList}${discStr}TOTAL: £${v.total.toFixed(2)}`;
+    if(!stdWorkList.length){ toast('⚠️ Please select at least one service before copying'); return; }
+    if(navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(t).then(()=>toast("📋 Quote copied to clipboard")).catch(()=>_fallbackCopy(t));
+    } else { _fallbackCopy(t); }
+}
+
+function _fallbackCopy(text) {
+    const el=document.createElement('textarea'); el.value=text;
+    el.style.position='fixed'; el.style.opacity='0';
+    document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+    toast("📋 Quote copied to clipboard");
+}
+
+function resetBuilderUI(){
+    const panel=document.getElementById('panel-build');
+    panel.querySelectorAll('input,textarea').forEach(i=>{if(i.type==='checkbox') i.checked=false; else i.value='';});
+    document.getElementById('mUsage').value="1"; document.getElementById('mSize').value="1.0"; document.getElementById('mTier').value="1.0"; document.getElementById('mDiscType').value="val";
+}
+function resetBuilder(){
+    editId=null;
+    currentBuilderRef = genUniqueJobNum(); // Fresh unique ref on every reset
+    document.getElementById('saveBtn').innerText="SAVE QUOTE";
+    resetBuilderUI();
+    curDist=0;
+    document.getElementById('mTravelInfo').innerText="Distance: 0 mi";
+    refreshBuilderRef();
+    calc();
+}
+
+function editJob(id){
+    const j=cloudJobs[id]; editId=id;
+    document.getElementById('mCust').value=j.name||''; document.getElementById('mPhone').value=j.phone||''; document.getElementById('mEmail').value=j.email||'';
+    document.getElementById('mReg').value=j.reg||''; document.getElementById('mMake').value=j.make||''; document.getElementById('mPcode').value=j.pcode||'';
+    document.getElementById('mAddr').value=j.addr||''; document.getElementById('mOfficeNotes').value=j.notes||''; document.getElementById('mParts').value=j.partsVal||'';
+    if(j.discInput) document.getElementById('mDiscount').value=j.discInput;
+    if(j.discType) document.getElementById('mDiscType').value=j.discType;
+    if(j.vatVal) document.getElementById('mUsage').value=j.vatVal;
+    if(j.sizeVal) document.getElementById('mSize').value=j.sizeVal;
+    if(j.tierVal) document.getElementById('mTier').value=j.tierVal;
+    if(j.surchargeData){ document.getElementById('mAcc').checked=j.surchargeData.acc||false; document.getElementById('mOOH').checked=j.surchargeData.ooh||false; document.getElementById('mEm').checked=j.surchargeData.em||false; document.getElementById('mEnv').checked=j.surchargeData.env||false; }
+    document.querySelectorAll('.j-chk').forEach(c=>{ const sj=stdJobs.find(x=>x.id===c.value); c.checked=j.services&&sj&&j.services.includes(sj.n); });
+    document.getElementById('saveBtn').innerText="UPDATE JOB";
+    // Restore the job's existing ref so it shows correctly in builder
+    currentBuilderRef = j.jobNum || j.id.replace(/^TC-?Q?-?/,'');
+    refreshBuilderRef();
+    calc(); switchTab('build');
+    window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function exportCSV(){
+    var headers=['Ref','Date Paid','Customer','REG','Make/Model','Services','Labour','Parts','Surcharges','Discount','Deposit','Refund','Total','Payment Method','Van'];
+    var rows=[headers];
+    Object.values(cloudJobs).filter(function(j){return j&&j.status==='PAID';}).sort(function(a,b){return (a.paidAt||0)-(b.paidAt||0);}).forEach(function(j){
+        rows.push([
+            displayId(j),
+            j.paidAt?new Date(j.paidAt).toLocaleDateString('en-GB'):'',
+            j.name||'', j.reg||'', j.make||'',
+            (j.services||[]).join(' | '),
+            (j.labourVal||0).toFixed(2),
+            (j.partsVal||0).toFixed(2),
+            (j.surchargeTotal||0).toFixed(2),
+            (j.discVal||0).toFixed(2),
+            (j.deposit||0).toFixed(2),
+            (j.refundVal||0).toFixed(2),
+            (j.originalTotal!=null?j.originalTotal:(j.total+(j.deposit||0))||0).toFixed(2),
+            j.payMethod||'',
+            j.dept||''
+        ]);
+    });
+    var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+    a.download='torqcymru_history_'+new Date().toLocaleDateString('en-GB').replace(/\//g,'-')+'.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    toast('CSV exported');
+}
+
+window.onload=()=>{
+    const grid=document.getElementById('mGrid');
+    stdJobs.forEach(j=>grid.innerHTML+=`<label class="job-card"><input type="checkbox" class="j-chk" value="${j.id}" onchange="calc()"> ${j.n}</label>`);
+    currentBuilderRef = String(Math.floor(10000+Math.random()*90000));
+    refreshBuilderRef();
+    // Restore session after refresh
+    try {
+        const savedVan = localStorage.getItem('tc_van');
+        const savedMaster = localStorage.getItem('tc_master');
+        if(savedVan) {
+            if(savedMaster === '1') {
+                isMaster=true;
+                document.getElementById('appBody').classList.add('is-master');
+                launchApp(savedVan);
+            } else {
+                launchApp(savedVan);
+            }
+        }
+    } catch(e){}
+};
+</script>
+</body>
+</html>
