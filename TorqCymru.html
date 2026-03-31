@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TORQ CYMRU | SOVEREIGN v21.11</title>
+    <title>TORQ CYMRU | SOVEREIGN v21.16</title>
     <!-- PWA Home Screen -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -442,7 +442,7 @@
         <p style="font-size:0.8rem;color:#aaa;margin-bottom:20px;" id="confirmActionMsg"></p>
         <div class="btn-grid-2">
             <button class="btn-gray" onclick="document.getElementById('confirmActionModal').style.display='none'">CANCEL</button>
-            <button class="btn-red" id="confirmActionBtn">CONFIRM</button>
+            <button class="btn-red" id="confirmActionBtn" onclick="runConfirmedAction()">CONFIRM</button>
         </div>
     </div>
 </div>
@@ -477,8 +477,15 @@ function toast(msg, duration=2200) {
 
 // ── FIREBASE ──────────────────────────────────────────────────────────────────
 const firebaseConfig = { apiKey:"AIzaSyDSC6LXcxQyBq0Yl42nRMH2GUuOInYL7TU", databaseURL:"https://torq-cymru-default-rtdb.europe-west1.firebasedatabase.app/", projectId:"torq-cymru" };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+let db = null;
+function initFirebase() {
+    try {
+        if(!db) {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+        }
+    } catch(e) { console.error('Firebase init error:', e); }
+}
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let isMaster=false, selectedVan="", cloudJobs={}, mPass="1234", aPass="9999", curDist=0, editId=null, logoB64="";
@@ -558,21 +565,24 @@ function isRepeatCustomer(j) {
 }
 
 // ── CONFIRM ACTION HELPER ────────────────────────────────────────────────────
-function confirmAction(title, msg, btnLabel, btnClass, onConfirm) {
-    document.getElementById('confirmActionTitle').innerText = title;
-    document.getElementById('confirmActionMsg').innerText = msg;
-    const btn = document.getElementById('confirmActionBtn');
-    btn.innerText = btnLabel;
-    btn.className = btnClass;
-    btn.onclick = () => { document.getElementById('confirmActionModal').style.display='none'; onConfirm(); };
-    document.getElementById('confirmActionModal').style.display = 'flex';
+let _confirmCb=null;
+function confirmAction(title, msg, btnLabel, btnClass, cb) {
+    _confirmCb=cb;
+    document.getElementById('confirmActionTitle').innerText=title;
+    document.getElementById('confirmActionMsg').innerText=msg;
+    const btn=document.getElementById('confirmActionBtn');
+    btn.innerText=btnLabel; btn.className=btnClass;
+    document.getElementById('confirmActionModal').style.display='flex';
+}
+function runConfirmedAction(){
+    document.getElementById('confirmActionModal').style.display='none';
+    if(_confirmCb){ _confirmCb(); _confirmCb=null; }
 }
 
 // ── APP INIT ──────────────────────────────────────────────────────────────────
 function returnToStartup() {
     // Detach Firebase listeners
-    db.ref("jobs").off();
-    db.ref("settings").off();
+    if(db){ db.ref("jobs").off(); db.ref("settings").off(); }
     // Reset state
     // Close any open modals first
     ['checklistModal','payModal','vanNoteModal','vanExitModal','confirmDeleteModal',
@@ -642,6 +652,7 @@ function startApp(van) {
 }
 
 function launchApp(van) {
+    initFirebase();
     selectedVan=van;
     document.getElementById('startup-screen').style.display='none';
     document.getElementById('main-ui').style.display='block';
@@ -1041,10 +1052,10 @@ function buildCard(j,id) {
     if(isMaster && !masterViewingVan) {
         // Full master controls
         if(j.status==='QUOTE') btns=`<button class="btn-green" onclick="event.stopPropagation();acceptWithDate('${id}')">ACCEPT</button><button class="btn-gray" onclick="event.stopPropagation();editJob('${id}')">EDIT</button>`;
-        else if(j.status==='ACCEPTED') btns=`<button class="btn-gray" onclick="event.stopPropagation();confirmAction('Undo Accept','Move ${j.reg} back to Quote?','UNDO','btn-gray',()=>updateStatus('${id}','QUOTE'))">UNDO ACCEPT</button><button class="btn-yellow" onclick="event.stopPropagation();takeDeposit('${id}')">DEPOSIT</button><button class="btn-orange" onclick="event.stopPropagation();updateStatus('${id}','PARTS')">AWAITING PARTS</button><button class="btn-blue" onclick="event.stopPropagation();openDispatchModal('${id}')">DISPATCH</button><button class="btn-gray" style="background:#555" onclick="event.stopPropagation();acceptWithDate('${id}')">RESCHEDULE</button>`;
+        else if(j.status==='ACCEPTED') btns=`<button class="btn-gray" onclick="event.stopPropagation();confirmAction('Undo Accept','Move ${j.reg} back to Quote?','UNDO','btn-gray',function(){updateStatus('${id}','QUOTE')})">UNDO ACCEPT</button><button class="btn-yellow" onclick="event.stopPropagation();takeDeposit('${id}')">DEPOSIT</button><button class="btn-orange" onclick="event.stopPropagation();updateStatus('${id}','PARTS')">AWAITING PARTS</button><button class="btn-blue" onclick="event.stopPropagation();openDispatchModal('${id}')">DISPATCH</button><button class="btn-gray" style="background:#555" onclick="event.stopPropagation();acceptWithDate('${id}')">RESCHEDULE</button>`;
         else if(j.status==='PARTS') btns=`<button class="btn-green" onclick="event.stopPropagation();updateStatus('${id}','ACCEPTED')">PARTS ARRIVED</button><button class="btn-blue" onclick="event.stopPropagation();openDispatchModal('${id}')">DISPATCH NOW</button><div style="grid-column:1/-1;margin-top:4px;"><textarea id="pn-${id}" style="font-size:0.75rem;padding:8px;margin-bottom:4px;" placeholder="Parts needed — what, qty, supplier..." maxlength="400" onclick="event.stopPropagation()">${j.partsNote||''}</textarea><button class="btn-orange" onclick="event.stopPropagation();savePartsNote('${id}')">SAVE PARTS NOTE</button></div><button class="btn-red" onclick="event.stopPropagation();deleteJob('${id}')">DELETE</button>`;
-        else if(j.status==='DISPATCHED') btns=`<button class="btn-gray" onclick="event.stopPropagation();confirmAction('Undo Dispatch','Return ${j.reg} from ${j.dept||'van'} back to Accepted?','UNDO','btn-gray',()=>updateStatus('${id}','ACCEPTED'))">UNDO DISP</button><button class="btn-blue" onclick="event.stopPropagation();openDispatchModal('${id}')">REASSIGN</button><button class="btn-gray" style="background:#555" onclick="event.stopPropagation();acceptWithDate('${id}')">RESCHEDULE</button>`;
-        else if(j.status==='PAID') btns=`<button class="btn-yellow" onclick="event.stopPropagation();finalInvoiceFlow('${id}')">PDF INVOICE</button><button class="btn-red" onclick="event.stopPropagation();issueRefund('${id}')">REFUND</button><button class="btn-gray" onclick="event.stopPropagation();confirmAction('Undo Payment','Remove payment record for ${j.reg}?','UNDO PAID','btn-gray',()=>undoPaid('${id}'))">UNDO PAID</button>`;
+        else if(j.status==='DISPATCHED') btns=`<button class="btn-gray" onclick="event.stopPropagation();confirmAction('Undo Dispatch','Return ${j.reg} back to Accepted?','UNDO','btn-gray',function(){updateStatus('${id}','ACCEPTED')})">UNDO DISP</button><button class="btn-blue" onclick="event.stopPropagation();openDispatchModal('${id}')">REASSIGN</button><button class="btn-gray" style="background:#555" onclick="event.stopPropagation();acceptWithDate('${id}')">RESCHEDULE</button>`;
+        else if(j.status==='PAID') btns=`<button class="btn-yellow" onclick="event.stopPropagation();finalInvoiceFlow('${id}')">PDF INVOICE</button><button class="btn-red" onclick="event.stopPropagation();issueRefund('${id}')">REFUND</button><button class="btn-gray" onclick="event.stopPropagation();confirmAction('Undo Payment','Remove payment record for ${j.reg}?','UNDO PAID','btn-gray',function(){undoPaid('${id}')})">UNDO PAID</button>`;
     } else if(masterViewingVan) {
         // Master viewing a van's board — read-only, call button only
         if(j.status==='PAID') btns=`<div style="color:var(--green);font-weight:bold;text-align:center;padding:10px;">✓ COMPLETED (${j.payMethod||'PAID'})</div>`;
@@ -1055,10 +1066,37 @@ function buildCard(j,id) {
     }
 
     const ukDate=j.schedDate?j.schedDate.split('-').reverse().join('/'):"TBC";
-    const masterBreakdown=`<div style="border-top:1px solid #333;margin-top:10px;padding-top:10px;"><div class="breakdown-row"><span>Labour:</span><span>£${(j.labourVal||0).toFixed(2)}</span></div><div class="breakdown-row"><span>Parts:</span><span>£${(j.partsVal||0).toFixed(2)}</span></div><div class="breakdown-row"><span>Surcharges:</span><span>£${(j.surchargeTotal||0).toFixed(2)}</span></div>${j.discVal?`<div class="breakdown-row" style="color:var(--red)"><span>Discount:</span><span>-£${j.discVal.toFixed(2)}</span></div>`:''}${j.deposit?`<div class="breakdown-row" style="color:var(--yellow)"><span>Deposit:</span><span>-£${j.deposit.toFixed(2)}</span></div>`:''}${j.refundVal?`<div class="breakdown-row" style="color:var(--red)"><span>REFUNDED:</span><span>-£${j.refundVal.toFixed(2)}</span></div>`:''}<div class="breakdown-row" style="color:var(--green);font-weight:bold;font-size:1rem;border-bottom:none;"><span>TOTAL:</span><span>£${j.total.toFixed(2)}</span></div>${j.payMethod?`<div style="font-size:0.6rem;color:#888;margin-top:5px;">Method: ${j.payMethod.toUpperCase()}${sigIcon}</div>`:''}</div>`;
+    const discRow=j.discVal?('<div class="breakdown-row" style="color:var(--red)"><span>Discount:</span><span>-£'+j.discVal.toFixed(2)+'</span></div>'):'';
+    const depRow=j.deposit?('<div class="breakdown-row" style="color:var(--yellow)"><span>Deposit:</span><span>-£'+j.deposit.toFixed(2)+'</span></div>'):'';
+    const refRow=j.refundVal?('<div class="breakdown-row" style="color:var(--red)"><span>REFUNDED:</span><span>-£'+j.refundVal.toFixed(2)+'</span></div>'):'';
+    const methodRow=j.payMethod?('<div style="font-size:0.6rem;color:#888;margin-top:5px;">Method: '+j.payMethod.toUpperCase()+sigIcon+'</div>'):'';
+    const masterBreakdown='<div style="border-top:1px solid #333;margin-top:10px;padding-top:10px;">'
+        +'<div class="breakdown-row"><span>Labour:</span><span>£'+(j.labourVal||0).toFixed(2)+'</span></div>'
+        +'<div class="breakdown-row"><span>Parts:</span><span>£'+(j.partsVal||0).toFixed(2)+'</span></div>'
+        +'<div class="breakdown-row"><span>Surcharges:</span><span>£'+(j.surchargeTotal||0).toFixed(2)+'</span></div>'
+        +discRow+depRow+refRow
+        +'<div class="breakdown-row" style="color:var(--green);font-weight:bold;font-size:1rem;border-bottom:none;"><span>TOTAL:</span><span>£'+j.total.toFixed(2)+'</span></div>'
+        +methodRow+'</div>';
 
-    const itemClass=`job-item status-${j.status}${expired?' expired-quote':''}`;
-    return `<div class="${itemClass}" onclick="this.classList.toggle('is-open')"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><strong class="upper">${j.reg}<span class="status-badge badge-${j.status}">${j.status}</span>${expiredTag}${repeatTag}</strong><span style="font-size:0.65rem;color:#aaa;white-space:nowrap;">${displayId(j)}</span></div><div style="font-size:0.75rem;color:#ccc;margin-top:4px;"><strong>${j.name}</strong> | ${j.make||'Vehicle'}<span class="date-tag">${ukDate}</span>${j.dept?`<span class="van-tag">${j.dept.toUpperCase()}</span>`:''}</div><div style="font-size:0.7rem;color:#888;margin-top:2px;">${j.addr} ${j.pcode}</div><div class="details-pane"><p><strong>Work:</strong> ${(j.services||[]).join(', ')}</p>${j.notes?`<p style="color:var(--yellow);font-size:0.75rem;"><strong>Office:</strong> ${j.notes}</p>`:''}${j.vanNotes?`<p style="color:var(--blue);font-size:0.75rem;"><strong>Van:</strong> ${j.vanNotes}</p>`:''}${isMaster?masterBreakdown:`<p style="color:var(--green);font-weight:bold;">COLLECT: £${j.total.toFixed(2)}</p>`}<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:10px;">${btns}${j.status!=='PAID'&&j.phone?`<button class="btn-blue" onclick="event.stopPropagation();window.open('tel:${j.phone}')">CALL</button>`:''}${isMaster&&!masterViewingVan&&j.status!=='PAID'&&j.status!=='PARTS'?`<button class="btn-red" onclick="event.stopPropagation();deleteJob('${id}')">DEL</button>`:''}</div></div></div>`;
+    const itemClass='job-item status-'+j.status+(expired?' expired-quote':'');
+    const deptTag=j.dept?('<span class="van-tag">'+j.dept.toUpperCase()+'</span>'):'';
+    const notesLine=j.notes?('<p style="color:var(--yellow);font-size:0.75rem;"><strong>Office:</strong> '+j.notes+'</p>'):'';
+    const vanNotesLine=j.vanNotes?('<p style="color:var(--blue);font-size:0.75rem;"><strong>Van:</strong> '+j.vanNotes+'</p>'):'';
+    const collectLine=isMaster?masterBreakdown:'<p style="color:var(--green);font-weight:bold;">COLLECT: £'+j.total.toFixed(2)+'</p>';
+    const callBtn=(j.status!=='PAID'&&j.phone)?('<button class="btn-blue" onclick="event.stopPropagation();window.open('tel:'+j.phone+'')">CALL</button>'):'';
+    const delBtn=(isMaster&&!masterViewingVan&&j.status!=='PAID'&&j.status!=='PARTS')?('<button class="btn-red" onclick="event.stopPropagation();deleteJob(''+id+'')">DEL</button>'):'';
+    return '<div class="'+itemClass+'" onclick="this.classList.toggle('is-open')">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
+        +'<strong class="upper">'+j.reg+'<span class="status-badge badge-'+j.status+'">'+j.status+'</span>'+expiredTag+repeatTag+'</strong>'
+        +'<span style="font-size:0.65rem;color:#aaa;white-space:nowrap;">'+displayId(j)+'</span></div>'
+        +'<div style="font-size:0.75rem;color:#ccc;margin-top:4px;"><strong>'+j.name+'</strong> | '+(j.make||'Vehicle')
+        +'<span class="date-tag">'+ukDate+'</span>'+deptTag+'</div>'
+        +'<div style="font-size:0.7rem;color:#888;margin-top:2px;">'+j.addr+' '+j.pcode+'</div>'
+        +'<div class="details-pane"><p><strong>Work:</strong> '+(j.services||[]).join(', ')+'</p>'
+        +notesLine+vanNotesLine+collectLine
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:10px;">'
+        +btns+callBtn+delBtn
+        +'</div></div></div>';
 }
 
 // ── DISPATCH ──────────────────────────────────────────────────────────────────
@@ -1594,7 +1632,7 @@ function editJob(id){
     if(j.sizeVal) document.getElementById('mSize').value=j.sizeVal;
     if(j.tierVal) document.getElementById('mTier').value=j.tierVal;
     if(j.surchargeData){ document.getElementById('mAcc').checked=j.surchargeData.acc||false; document.getElementById('mOOH').checked=j.surchargeData.ooh||false; document.getElementById('mEm').checked=j.surchargeData.em||false; document.getElementById('mEnv').checked=j.surchargeData.env||false; }
-    document.querySelectorAll('.j-chk').forEach(c=>{ c.checked=j.services&&j.services.includes(stdJobs.find(x=>x.id===c.value)?.n); });
+    document.querySelectorAll('.j-chk').forEach(c=>{ const sj=stdJobs.find(x=>x.id===c.value); c.checked=j.services&&sj&&j.services.includes(sj.n); });
     document.getElementById('saveBtn').innerText="UPDATE JOB";
     // Restore the job's existing ref so it shows correctly in builder
     currentBuilderRef = j.jobNum || j.id.replace(/^TC-?Q?-?/,'');
